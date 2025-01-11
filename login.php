@@ -1,51 +1,53 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 session_start();
+error_log("Starting login process");
+
+// If already logged in, redirect to recipes page
+if (isset($_SESSION['user_id'])) {
+    error_log("User already logged in, redirecting to index.php");
+    header('Location: index.php');
+    exit;
+}
+
 require_once 'config/database.php';
 
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $conn->real_escape_string($_POST['username']);
+    error_log("Processing login POST request");
+    $username = $_POST['username'];
     $password = $_POST['password'];
-
-    $query = "SELECT id, username, password_hash, status FROM users WHERE username = ?";
+    
+    error_log("Attempting login for username: " . $username);
+    
+    $query = "SELECT id, password_hash FROM users WHERE username = ?";
     $stmt = $conn->prepare($query);
     $stmt->bind_param("s", $username);
     $stmt->execute();
     $result = $stmt->get_result();
-
-    if ($user = $result->fetch_assoc()) {
-        if ($user['status'] === 'created') {
-            $error = 'Your account is pending approval. Please wait for admin activation.';
-        } else if ($user['status'] === 'inactive') {
-            $error = 'Your account is inactive. Please contact the administrator.';
-        } else if (password_verify($password, $user['password_hash'])) {
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['username'] = $user['username'];
-            
-            // Add debugging
-            error_log("Login successful for user: " . $username);
-            error_log("Session user_id: " . $_SESSION['user_id']);
-            
-            // Make sure the header redirect is working
-            if (!headers_sent()) {
-                header('Location: index.php');
-                exit;
-            } else {
-                echo '<script>window.location.href = "index.php";</script>';
-                exit;
-            }
-        } else {
-            $error = 'Invalid password';
-        }
+    $user = $result->fetch_assoc();
+    
+    if ($user && password_verify($password, $user['password_hash'])) {
+        error_log("Password verified successfully");
+        $_SESSION['user_id'] = $user['id'];
+        error_log("Session user_id set to: " . $user['id']);
+        header('Location: index.php');
+        exit;
     } else {
-        $error = 'User not found';
+        error_log("Login failed");
+        $error = "Invalid username or password";
     }
 }
 
-// Add debugging at the top of the file
-error_log("Session status: " . session_status());
-error_log("POST data: " . print_r($_POST, true));
+// Check if there's a user in the database at all
+$check_query = "SELECT COUNT(*) as count FROM users";
+$result = $conn->query($check_query);
+$count = $result->fetch_assoc()['count'];
+error_log("Total users in database: " . $count);
 ?>
 
 <!DOCTYPE html>
@@ -69,7 +71,7 @@ error_log("POST data: " . print_r($_POST, true));
         <div class="auth-container">
             <h2>Login</h2>
             <?php if ($error): ?>
-                <div class="error-message"><?php echo $error; ?></div>
+                <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
             <?php endif; ?>
             <form method="POST" action="login.php">
                 <div class="form-group">

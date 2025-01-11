@@ -7,6 +7,6 @@ define('DB_NAME', 'wpxcxfmy_burning_to_cook');
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 
 if ($conn->connect_error) {
+    error_log("Database connection failed: " . $conn->connect_error);
     die("Connection failed: " . $conn->connect_error);
-}
-?> 
+} 

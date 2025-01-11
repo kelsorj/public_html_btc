@@ -1,5 +1,21 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 session_start();
+error_log("Index.php - Session started");
+error_log("Session user_id: " . ($_SESSION['user_id'] ?? 'not set'));
+
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    error_log("User not logged in, redirecting to login.php");
+    header('Location: login.php');
+    exit;
+}
+
+error_log("User is logged in with ID: " . $_SESSION['user_id']);
+
 require_once 'config/database.php';
 
 // Fetch all categories for the filter
@@ -60,7 +76,7 @@ $recipes = $conn->query($recipes_query)->fetch_all(MYSQLI_ASSOC);
     </header>
 
     <main>
-        <div class="recipe-grid" id="recipe-container">
+        <div class="recipe-grid">
             <?php if (empty($recipes)): ?>
                 <div class="no-recipes">No recipes found</div>
             <?php else: ?>

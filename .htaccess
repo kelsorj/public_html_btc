@@ -1,0 +1,18 @@
+# Redirect all requests to login.php
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^$ login.php [L]
+
+# Protect sensitive files
+<FilesMatch "\.(htaccess|htpasswd|ini|log|sh|inc|bak|json)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch> 
+
+# Session settings
+php_value session.cookie_lifetime 0
+php_value session.use_cookies 1
+php_value session.use_only_cookies 1
+php_value session.use_strict_mode 1
+php_value session.cookie_httponly 1 
