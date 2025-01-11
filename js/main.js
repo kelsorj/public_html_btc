@@ -87,4 +87,25 @@ function debounce(func, wait) {
         clearTimeout(timeout);
         timeout = setTimeout(later, wait);
     };
+}
+
+function deleteRecipe(recipeId) {
+    if (confirm('Are you sure you want to delete this recipe?')) {
+        fetch(`api/delete_recipe.php?id=${recipeId}`, {
+            method: 'DELETE',
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = 'index.php';
+            } else {
+                alert(data.error || 'Error deleting recipe');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting recipe');
+        });
+    }
 } 
