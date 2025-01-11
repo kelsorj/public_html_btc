@@ -116,25 +116,30 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
                     <textarea id="instructions" name="instructions" rows="10" required><?php echo htmlspecialchars($recipe['instructions']); ?></textarea>
                 </div>
 
-                <div class="ingredients-section">
-                    <h2>Ingredients</h2>
+                <div class="form-group">
+                    <label>Ingredients</label>
                     <div id="ingredients-container">
-                        <?php foreach ($ingredients as $index => $ingredient): ?>
+                        <?php foreach ($ingredients as $i => $ingredient): ?>
                             <div class="ingredient-row">
-                                <input type="text" name="ingredients[<?php echo $index; ?>][name]" 
-                                       value="<?php echo htmlspecialchars($ingredient['name']); ?>" 
-                                       placeholder="Ingredient name" required>
-                                <input type="text" name="ingredients[<?php echo $index; ?>][amount]" 
+                                <input type="text" name="ingredients[<?php echo $i; ?>][amount]" 
                                        value="<?php echo htmlspecialchars($ingredient['amount']); ?>" 
-                                       placeholder="Amount" required>
-                                <input type="text" name="ingredients[<?php echo $index; ?>][unit]" 
+                                       placeholder="Amount">
+                                <input type="text" name="ingredients[<?php echo $i; ?>][unit]" 
                                        value="<?php echo htmlspecialchars($ingredient['unit']); ?>" 
-                                       placeholder="Unit" required>
-                                <button type="button" class="btn btn-secondary remove-ingredient">Remove</button>
+                                       placeholder="Unit">
+                                <input type="text" name="ingredients[<?php echo $i; ?>][name]" 
+                                       value="<?php echo htmlspecialchars($ingredient['name']); ?>" 
+                                       placeholder="Ingredient" required>
+                                <button type="button" class="btn btn-secondary" onclick="this.parentElement.remove()">Remove</button>
                             </div>
                         <?php endforeach; ?>
                     </div>
-                    <button type="button" id="add-ingredient" class="btn btn-secondary">Add Ingredient</button>
+                    <div class="ingredient-buttons">
+                        <button type="button" class="btn btn-secondary" onclick="addIngredientRow()">Add Ingredient</button>
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('bulk-input-modal').style.display='block'">
+                            Bulk Add Ingredients
+                        </button>
+                    </div>
                 </div>
 
                 <div class="notes-section">
@@ -415,6 +420,23 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
             <div class="modal-actions">
                 <button type="button" class="btn btn-secondary" onclick="closeStoryModal()">Cancel</button>
                 <button type="button" class="btn btn-primary" onclick="saveStory()">Save Story</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="bulk-input-modal" class="modal">
+        <div class="modal-content">
+            <h3>Bulk Add Ingredients</h3>
+            <p>Paste your ingredients below, one per line. Format: "amount unit ingredient"<br>
+               Examples:<br>
+               2 cups flour<br>
+               1/2 tsp salt<br>
+               3 large eggs<br>
+               1 onion, diced</p>
+            <textarea id="bulk-ingredients" rows="10" placeholder="Paste ingredients here..."></textarea>
+            <div class="modal-buttons">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('bulk-input-modal').style.display='none'">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="addBulkIngredients()">Add Ingredients</button>
             </div>
         </div>
     </div>

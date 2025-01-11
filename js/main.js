@@ -108,4 +108,51 @@ function deleteRecipe(recipeId) {
             alert('Error deleting recipe');
         });
     }
+}
+
+function parseBulkIngredients(text) {
+    // Split by newlines and filter empty lines
+    return text.split('\n')
+        .map(line => line.trim())
+        .filter(line => line)
+        .map(line => {
+            // Try to parse amount, unit, and name
+            const regex = /^(?:(?:(\d+(?:\/\d+)?|\d*\.?\d+)\s*([A-Za-z]+|\"))?\s*)?(.+)$/;
+            const match = line.match(regex);
+            
+            if (match) {
+                const [, amount, unit, name] = match;
+                return {
+                    amount: amount || '',
+                    unit: unit || '',
+                    name: name.trim()
+                };
+            }
+            
+            // If no pattern match, return just the name
+            return {
+                amount: '',
+                unit: '',
+                name: line
+            };
+        });
+}
+
+function addBulkIngredients() {
+    const bulkText = document.getElementById('bulk-ingredients').value;
+    const ingredients = parseBulkIngredients(bulkText);
+    
+    const container = document.getElementById('ingredients-container');
+    ingredients.forEach(ingredient => {
+        addIngredientRow(ingredient.amount, ingredient.unit, ingredient.name);
+    });
+    
+    // Clear the textarea
+    document.getElementById('bulk-ingredients').value = '';
+    document.getElementById('bulk-input-modal').style.display = 'none';
+}
+
+// Add this function to handle the Add Recipe button click
+function addRecipe() {
+    window.location.href = 'add_recipe.php';
 } 
