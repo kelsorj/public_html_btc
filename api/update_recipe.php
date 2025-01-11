@@ -43,13 +43,46 @@ if (!$stmt->get_result()->fetch_assoc()) {
 // Handle image upload if provided
 $image_path = null;
 if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-    $upload_dir = '../uploads/';
-    $file_extension = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
-    $new_filename = uniqid() . '.' . $file_extension;
-    $upload_path = $upload_dir . $new_filename;
-
-    if (move_uploaded_file($_FILES['image']['tmp_name'], $upload_path)) {
+    $file = $_FILES['image'];
+    $file_extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    
+    // Validate file type
+    $allowed_types = ['jpg', 'jpeg', 'png', 'gif'];
+    if (!in_array($file_extension, $allowed_types)) {
+        $_SESSION['error_message'] = 'Invalid file type. Only JPG, PNG and GIF are allowed.';
+        header('Location: ../edit_recipe.php?id=' . $recipe_id);
+        exit;
+    }
+    
+    // Generate unique filename using content hash and timestamp
+    $file_content = file_get_contents($file['tmp_name']);
+    $content_hash = hash('sha256', $file_content . time());
+    $new_filename = $content_hash . '.' . $file_extension;
+    $upload_path = '../uploads/' . $new_filename;
+    
+    // Check if file with same hash already exists
+    while (file_exists($upload_path)) {
+        // If exists, add random string to hash and try again
+        $content_hash = hash('sha256', $file_content . time() . rand(1000, 9999));
+        $new_filename = $content_hash . '.' . $file_extension;
+        $upload_path = '../uploads/' . $new_filename;
+    }
+    
+    // Move file to uploads directory
+    if (move_uploaded_file($file['tmp_name'], $upload_path)) {
         $image_path = 'uploads/' . $new_filename;
+        
+        // Delete old image if exists
+        if ($old_image_path) {
+            $old_file = '../' . $old_image_path;
+            if (file_exists($old_file)) {
+                unlink($old_file);
+            }
+        }
+    } else {
+        $_SESSION['error_message'] = 'Error uploading file.';
+        header('Location: ../edit_recipe.php?id=' . $recipe_id);
+        exit;
     }
 }
 
