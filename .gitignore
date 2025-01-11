@@ -5,3 +5,8 @@
 /wpxcxfmy_burning_to_cook.sql
 /error_log
 /.well-known/
+config/database.local.php
+uploads/*
+!uploads/.gitkeep
+.DS_Store
+error_log
