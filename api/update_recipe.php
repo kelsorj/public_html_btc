@@ -53,6 +53,33 @@ if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
     }
 }
 
+// Add this before updating the recipe
+$category_id = $_POST['category_id'];
+
+// Handle new category creation
+if ($category_id === 'new' && !empty($_POST['new_category'])) {
+    $new_category = trim($_POST['new_category']);
+    
+    // Check if category already exists
+    $check_query = "SELECT id FROM categories WHERE name = ?";
+    $stmt = $conn->prepare($check_query);
+    $stmt->bind_param("s", $new_category);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows > 0) {
+        // Category already exists, use its ID
+        $category_id = $result->fetch_assoc()['id'];
+    } else {
+        // Create new category
+        $insert_query = "INSERT INTO categories (name) VALUES (?)";
+        $stmt = $conn->prepare($insert_query);
+        $stmt->bind_param("s", $new_category);
+        $stmt->execute();
+        $category_id = $conn->insert_id;
+    }
+}
+
 // Update recipe
 $conn->begin_transaction();
 
@@ -67,9 +94,9 @@ try {
     
     $stmt = $conn->prepare($update_query);
     if ($image_path) {
-        $stmt->bind_param("sissi", $_POST['title'], $_POST['category_id'], $_POST['instructions'], $image_path, $recipe_id);
+        $stmt->bind_param("sissi", $_POST['title'], $category_id, $_POST['instructions'], $image_path, $recipe_id);
     } else {
-        $stmt->bind_param("sssi", $_POST['title'], $_POST['category_id'], $_POST['instructions'], $recipe_id);
+        $stmt->bind_param("sisi", $_POST['title'], $category_id, $_POST['instructions'], $recipe_id);
     }
     $stmt->execute();
 

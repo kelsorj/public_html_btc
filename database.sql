@@ -42,6 +42,7 @@ ALTER TABLE recipes ADD COLUMN instructions TEXT NOT NULL AFTER category_id;
 CREATE TABLE recipe_notes (
     id INT PRIMARY KEY AUTO_INCREMENT,
     recipe_id INT NOT NULL,
+    
     user_id INT NOT NULL,
     note TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

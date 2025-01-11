@@ -19,8 +19,11 @@ body {
 
 header {
     background-color: #fff;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     padding: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 }
 
 nav {
@@ -29,6 +32,7 @@ nav {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 2rem;
 }
 
 .logo a {
@@ -45,11 +49,13 @@ nav {
 }
 
 .btn {
-    padding: 0.5rem 1rem;
+    padding: 0.75rem 1.5rem;
     border: none;
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
-    font-weight: bold;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
 }
 
 .btn-primary {
@@ -57,16 +63,78 @@ nav {
     color: white;
 }
 
+.btn-primary:hover {
+    background-color: #1976D2;
+    transform: translateY(-1px);
+}
+
 .btn-secondary {
     background-color: var(--secondary-color);
     color: white;
 }
 
-.search-container {
-    max-width: 1200px;
-    margin: 2rem auto;
+.btn-secondary:hover {
+    background-color: #43A047;
+    transform: translateY(-1px);
+}
+
+.search-bar {
+    flex: 1;
     display: flex;
     gap: 1rem;
+    align-items: center;
+    max-width: 600px;
+}
+
+.search-input {
+    position: relative;
+    flex: 1;
+}
+
+.search-input i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+}
+
+.search-input input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background-color: #f8f9fa;
+    transition: all 0.2s ease;
+}
+
+.search-input input:focus {
+    background-color: #fff;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+    outline: none;
+}
+
+.category-filter select {
+    padding: 0.75rem 2rem 0.75rem 1rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background-color: #f8f9fa;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    min-width: 160px;
+}
+
+.category-filter select:focus {
+    background-color: #fff;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+    outline: none;
 }
 
 .recipe-grid {
@@ -521,4 +589,22 @@ textarea {
     padding: 1rem;
     border-radius: 4px;
     margin-bottom: 1rem;
+}
+
+/* Add these styles */
+.category-selection {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+#new-category-input {
+    display: none;
+    gap: 1rem;
+    align-items: start;
+}
+
+#new-category-input input {
+    flex: 1;
+    min-width: 200px;
 } 

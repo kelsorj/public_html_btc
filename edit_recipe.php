@@ -77,14 +77,22 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
 
                 <div class="form-group">
                     <label for="category">Category</label>
-                    <select id="category" name="category_id" required>
-                        <?php foreach ($categories as $category): ?>
-                            <option value="<?php echo $category['id']; ?>" 
-                                <?php echo ($category['id'] == $recipe['category_id']) ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($category['name']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
+                    <div class="category-selection">
+                        <select id="category" name="category_id" required>
+                            <option value="">Select a category</option>
+                            <?php foreach ($categories as $category): ?>
+                                <option value="<?php echo $category['id']; ?>" 
+                                    <?php echo ($category['id'] == $recipe['category_id']) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($category['name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                            <option value="new">+ Add New Category</option>
+                        </select>
+                        <div id="new-category-input" style="display: none;">
+                            <input type="text" id="new-category-name" name="new_category" placeholder="Enter new category name">
+                            <button type="button" class="btn btn-secondary" onclick="cancelNewCategory()">Cancel</button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -368,6 +376,23 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
         if (event.target.className === 'modal') {
             event.target.style.display = 'none';
         }
+    }
+
+    document.getElementById('category').addEventListener('change', function() {
+        const newCategoryInput = document.getElementById('new-category-input');
+        if (this.value === 'new') {
+            newCategoryInput.style.display = 'flex';
+            this.style.display = 'none';
+        }
+    });
+
+    function cancelNewCategory() {
+        const categorySelect = document.getElementById('category');
+        const newCategoryInput = document.getElementById('new-category-input');
+        categorySelect.value = '';
+        categorySelect.style.display = 'block';
+        newCategoryInput.style.display = 'none';
+        document.getElementById('new-category-name').value = '';
     }
     </script>
 
