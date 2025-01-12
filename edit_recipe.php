@@ -69,6 +69,7 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
         <div class="recipe-form">
             <form id="edit-recipe-form" action="api/update_recipe.php" method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="recipe_id" value="<?php echo $recipe['id']; ?>">
+                <input type="hidden" name="return_to" value="recipe-<?php echo $recipe['id']; ?>">
                 
                 <div class="form-actions form-actions-top">
                     <button type="submit" class="btn btn-primary">Save Recipe</button>
@@ -351,14 +352,14 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
             const oldValue = this.dataset.oldValue || '';
             const newValue = this.value || '';
             
-            // Update all ingredient input names in this section
             section.querySelectorAll('.ingredient-row input').forEach(input => {
                 const name = input.getAttribute('name');
                 if (name) {
-                    input.setAttribute('name', name.replace(
+                    const newName = name.replace(
                         `ingredients[${encodeURIComponent(oldValue)}]`,
                         `ingredients[${encodeURIComponent(newValue)}]`
-                    ));
+                    );
+                    input.setAttribute('name', newName);
                 }
             });
             
@@ -374,15 +375,16 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
 
     function addIngredientRow(button) {
         const container = button.closest('.ingredient-section').querySelector('.ingredients-container');
-        const section = button.closest('.ingredient-section').querySelector('.section-title').value || '';
+        const section = button.closest('.ingredient-section').querySelector('.section-title');
+        const sectionName = section ? section.value || '' : '';
         const ingredientCount = container.children.length;
         
         const row = document.createElement('div');
         row.className = 'ingredient-row';
         row.innerHTML = `
-            <input type="text" name="ingredients[${encodeURIComponent(section)}][${ingredientCount}][amount]" placeholder="Amount">
-            <input type="text" name="ingredients[${encodeURIComponent(section)}][${ingredientCount}][unit]" placeholder="Unit">
-            <input type="text" name="ingredients[${encodeURIComponent(section)}][${ingredientCount}][name]" placeholder="Ingredient" required>
+            <input type="text" name="ingredients[${encodeURIComponent(sectionName)}][${ingredientCount}][amount]" placeholder="Amount">
+            <input type="text" name="ingredients[${encodeURIComponent(sectionName)}][${ingredientCount}][unit]" placeholder="Unit">
+            <input type="text" name="ingredients[${encodeURIComponent(sectionName)}][${ingredientCount}][name]" placeholder="Ingredient" required>
             <button type="button" class="btn btn-secondary" onclick="this.parentElement.remove()">Remove</button>
         `;
         container.appendChild(row);
@@ -584,26 +586,64 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
         });
     }
 
-    // Add form submit handler
+    // Update form submit handler
     document.addEventListener('DOMContentLoaded', function() {
         const form = document.getElementById('edit-recipe-form');
         if (form) {
             form.addEventListener('submit', function(e) {
-                // Ensure empty sections are handled properly
-                document.querySelectorAll('.section-title').forEach(title => {
-                    const section = title.closest('.ingredient-section');
-                    const sectionName = title.value.trim();
+                e.preventDefault();
+                
+                // Validate ingredients
+                const hasIngredients = document.querySelectorAll('.ingredient-row input[name$="[name]"]').length > 0;
+                if (!hasIngredients) {
+                    alert('Please add at least one ingredient');
+                    return;
+                }
+
+                // Create a new FormData object
+                const formData = new FormData(form);
+
+                // Remove existing ingredient data
+                for (const pair of formData.entries()) {
+                    if (pair[0].startsWith('ingredients[')) {
+                        formData.delete(pair[0]);
+                    }
+                }
+
+                // Add ingredients with proper indexing
+                const sections = document.querySelectorAll('.ingredient-section');
+                let ingredientIndex = 0;
+
+                sections.forEach(section => {
+                    const sectionTitle = section.querySelector('.section-title');
+                    const sectionName = sectionTitle ? sectionTitle.value || '' : '';
                     
-                    section.querySelectorAll('.ingredient-row input').forEach(input => {
-                        const name = input.getAttribute('name');
-                        if (name) {
-                            input.setAttribute('name', name.replace(
-                                /ingredients\[[^\]]*\]/,
-                                `ingredients[${encodeURIComponent(sectionName)}]`
-                            ));
+                    section.querySelectorAll('.ingredient-row').forEach(row => {
+                        const amountInput = row.querySelector('input[name$="[amount]"]');
+                        const unitInput = row.querySelector('input[name$="[unit]"]');
+                        const nameInput = row.querySelector('input[name$="[name]"]');
+                        
+                        if (nameInput && nameInput.value.trim()) {
+                            formData.append(`ingredients[${ingredientIndex}][section]`, sectionName);
+                            formData.append(`ingredients[${ingredientIndex}][amount]`, amountInput.value);
+                            formData.append(`ingredients[${ingredientIndex}][unit]`, unitInput.value);
+                            formData.append(`ingredients[${ingredientIndex}][name]`, nameInput.value);
+                            ingredientIndex++;
                         }
                     });
                 });
+
+                // Submit the form
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', form.action, true);
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        window.location.href = xhr.responseURL;
+                    } else {
+                        alert('Error saving recipe');
+                    }
+                };
+                xhr.send(formData);
             });
         }
     });

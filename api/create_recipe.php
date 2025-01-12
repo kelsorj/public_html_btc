@@ -85,27 +85,37 @@ try {
     if (isset($_POST['ingredients']) && is_array($_POST['ingredients'])) {
         $stmt = $conn->prepare("INSERT INTO ingredients (recipe_id, name, amount, unit, section) VALUES (?, ?, ?, ?, ?)");
         
-        foreach ($_POST['ingredients'] as $section => $ingredients) {
-            if (!is_array($ingredients)) {
+        foreach ($_POST['ingredients'] as $ingredient) {
+            // Skip if ingredient name is empty
+            if (empty($ingredient['name'])) {
                 continue;
             }
-            foreach ($ingredients as $ingredient) {
-                if (!empty($ingredient['name'])) {
-                    $section_name = $section !== 'null' ? $section : '';
-                    $amount = isset($ingredient['amount']) ? $ingredient['amount'] : '';
-                    $unit = isset($ingredient['unit']) ? $ingredient['unit'] : '';
-                    
-                    $stmt->bind_param("issss", 
-                        $recipe_id, 
-                        $ingredient['name'],
-                        $amount,
-                        $unit,
-                        $section_name
-                    );
-                    $stmt->execute();
-                }
+            
+            // Clean and prepare values
+            $name = trim($ingredient['name']);
+            $amount = isset($ingredient['amount']) ? trim($ingredient['amount']) : '';
+            $unit = isset($ingredient['unit']) ? trim($ingredient['unit']) : '';
+            $section = isset($ingredient['section']) ? trim($ingredient['section']) : '';
+            
+            // Debug log
+            error_log("Creating ingredient: " . json_encode([
+                'recipe_id' => $recipe_id,
+                'name' => $name,
+                'amount' => $amount,
+                'unit' => $unit,
+                'section' => $section
+            ]));
+            
+            if (!$stmt->bind_param("issss", $recipe_id, $name, $amount, $unit, $section)) {
+                throw new Exception("Error binding parameters: " . $stmt->error);
+            }
+            
+            if (!$stmt->execute()) {
+                throw new Exception("Error inserting ingredient: " . $stmt->error);
             }
         }
+    } else {
+        throw new Exception("No ingredients provided or invalid format");
     }
 
     $conn->commit();

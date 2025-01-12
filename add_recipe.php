@@ -152,6 +152,61 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
             newCategoryInput.style.display = 'none';
             document.getElementById('new-category-name').value = '';
         }
+
+        // Update form submit handler
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('add-recipe-form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    // Validate ingredients
+                    const hasIngredients = document.querySelectorAll('.ingredient-row input[name$="[name]"]').length > 0;
+                    if (!hasIngredients) {
+                        alert('Please add at least one ingredient');
+                        return;
+                    }
+
+                    // Create a new FormData object
+                    const formData = new FormData(form);
+
+                    // Remove existing ingredient data
+                    for (const pair of formData.entries()) {
+                        if (pair[0].startsWith('ingredients[')) {
+                            formData.delete(pair[0]);
+                        }
+                    }
+
+                    // Add ingredients with proper indexing
+                    let ingredientIndex = 0;
+                    document.querySelectorAll('.ingredient-row').forEach(row => {
+                        const amountInput = row.querySelector('input[name$="[amount]"]');
+                        const unitInput = row.querySelector('input[name$="[unit]"]');
+                        const nameInput = row.querySelector('input[name$="[name]"]');
+                        
+                        if (nameInput && nameInput.value.trim()) {
+                            formData.append(`ingredients[${ingredientIndex}][amount]`, amountInput.value.trim());
+                            formData.append(`ingredients[${ingredientIndex}][unit]`, unitInput.value.trim());
+                            formData.append(`ingredients[${ingredientIndex}][name]`, nameInput.value.trim());
+                            formData.append(`ingredients[${ingredientIndex}][section]`, ''); // Empty section for new recipes
+                            ingredientIndex++;
+                        }
+                    });
+
+                    // Submit the form
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', form.action, true);
+                    xhr.onload = function() {
+                        if (xhr.status === 200) {
+                            window.location.href = xhr.responseURL;
+                        } else {
+                            alert('Error saving recipe');
+                        }
+                    };
+                    xhr.send(formData);
+                });
+            }
+        });
     </script>
 </body>
 </html> 
