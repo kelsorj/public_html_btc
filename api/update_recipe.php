@@ -57,21 +57,19 @@ if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
     }
     
     // Generate unique filename using content hash and timestamp
-    $file_content = file_get_contents($file['tmp_name']);
-    $content_hash = hash('sha256', $file_content . time());
-    $new_filename = $content_hash . '.' . $file_extension;
+    $content_hash = hash('sha256', file_get_contents($file['tmp_name']) . time());
+    $new_filename = $content_hash . '.jpg'; // Always save as JPG
     $upload_path = '../uploads/' . $new_filename;
     
-    // Check if file with same hash already exists
+    // Check if file exists
     while (file_exists($upload_path)) {
-        // If exists, add random string to hash and try again
-        $content_hash = hash('sha256', $file_content . time() . rand(1000, 9999));
-        $new_filename = $content_hash . '.' . $file_extension;
+        $content_hash = hash('sha256', file_get_contents($file['tmp_name']) . time() . rand(1000, 9999));
+        $new_filename = $content_hash . '.jpg';
         $upload_path = '../uploads/' . $new_filename;
     }
     
-    // Move file to uploads directory
-    if (move_uploaded_file($file['tmp_name'], $upload_path)) {
+    // Optimize and save image
+    if (optimizeImage($file['tmp_name'], $upload_path)) {
         $image_path = 'uploads/' . $new_filename;
         
         // Delete old image if exists
@@ -82,7 +80,7 @@ if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
             }
         }
     } else {
-        $_SESSION['error_message'] = 'Error uploading file.';
+        $_SESSION['error_message'] = 'Error processing image.';
         header('Location: ../edit_recipe.php?id=' . $recipe_id);
         exit;
     }

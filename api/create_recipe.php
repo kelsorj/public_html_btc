@@ -45,20 +45,22 @@ try {
         }
         
         // Generate unique filename
-        $file_content = file_get_contents($file['tmp_name']);
-        $content_hash = hash('sha256', $file_content . time());
-        $new_filename = $content_hash . '.' . $file_extension;
+        $content_hash = hash('sha256', file_get_contents($file['tmp_name']) . time());
+        $new_filename = $content_hash . '.jpg'; // Always save as JPG
         $upload_path = '../uploads/' . $new_filename;
         
         // Check if file exists
         while (file_exists($upload_path)) {
-            $content_hash = hash('sha256', $file_content . time() . rand(1000, 9999));
-            $new_filename = $content_hash . '.' . $file_extension;
+            $content_hash = hash('sha256', file_get_contents($file['tmp_name']) . time() . rand(1000, 9999));
+            $new_filename = $content_hash . '.jpg';
             $upload_path = '../uploads/' . $new_filename;
         }
         
-        if (move_uploaded_file($file['tmp_name'], $upload_path)) {
+        // Optimize and save image
+        if (optimizeImage($file['tmp_name'], $upload_path)) {
             $image_path = 'uploads/' . $new_filename;
+        } else {
+            throw new Exception('Error processing image.');
         }
     }
 
