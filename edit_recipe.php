@@ -67,7 +67,7 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
 
     <main>
         <div class="recipe-form">
-            <form action="api/update_recipe.php" method="POST" enctype="multipart/form-data">
+            <form id="edit-recipe-form" action="api/update_recipe.php" method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="recipe_id" value="<?php echo $recipe['id']; ?>">
                 
                 <div class="form-actions form-actions-top">
@@ -591,18 +591,18 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
             form.addEventListener('submit', function(e) {
                 // Ensure empty sections are handled properly
                 document.querySelectorAll('.section-title').forEach(title => {
-                    if (!title.value.trim()) {
-                        const section = title.closest('.ingredient-section');
-                        section.querySelectorAll('.ingredient-row input').forEach(input => {
-                            const name = input.getAttribute('name');
-                            if (name) {
-                                input.setAttribute('name', name.replace(
-                                    /ingredients\[[^\]]*\]/,
-                                    'ingredients[default]'
-                                ));
-                            }
-                        });
-                    }
+                    const section = title.closest('.ingredient-section');
+                    const sectionName = title.value.trim();
+                    
+                    section.querySelectorAll('.ingredient-row input').forEach(input => {
+                        const name = input.getAttribute('name');
+                        if (name) {
+                            input.setAttribute('name', name.replace(
+                                /ingredients\[[^\]]*\]/,
+                                `ingredients[${encodeURIComponent(sectionName)}]`
+                            ));
+                        }
+                    });
                 });
             });
         }
