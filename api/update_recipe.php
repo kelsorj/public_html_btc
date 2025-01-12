@@ -47,9 +47,11 @@ if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
     $file_extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
     
     // Validate file type
-    $allowed_types = ['jpg', 'jpeg', 'png', 'gif'];
-    if (!in_array($file_extension, $allowed_types)) {
-        $_SESSION['error_message'] = 'Invalid file type. Only JPG, PNG and GIF are allowed.';
+    $allowed_types = ['jpg', 'jpeg', 'png', 'webp'];
+    $allowed_mimes = ['image/jpeg', 'image/png', 'image/webp'];
+    
+    if (!in_array($file_extension, $allowed_types) || !in_array(mime_content_type($file['tmp_name']), $allowed_mimes)) {
+        $_SESSION['error_message'] = 'Invalid file type. Only JPG, PNG and WEBP are allowed.';
         header('Location: ../edit_recipe.php?id=' . $recipe_id);
         exit;
     }

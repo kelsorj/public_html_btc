@@ -74,7 +74,8 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
 
                 <div class="form-group">
                     <label for="image">Recipe Image (optional)</label>
-                    <input type="file" id="image" name="image" accept="image/*">
+                    <input type="file" id="image" name="image" accept="image/jpeg, image/png, image/webp">
+                    <small>Accepted formats: JPG, PNG, WEBP</small>
                 </div>
 
                 <div class="form-group">

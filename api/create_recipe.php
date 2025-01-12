@@ -37,9 +37,11 @@ try {
         $file_extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         
         // Validate file type
-        $allowed_types = ['jpg', 'jpeg', 'png', 'gif'];
-        if (!in_array($file_extension, $allowed_types)) {
-            throw new Exception('Invalid file type. Only JPG, PNG and GIF are allowed.');
+        $allowed_types = ['jpg', 'jpeg', 'png', 'webp'];
+        $allowed_mimes = ['image/jpeg', 'image/png', 'image/webp'];
+        
+        if (!in_array($file_extension, $allowed_types) || !in_array(mime_content_type($file['tmp_name']), $allowed_mimes)) {
+            throw new Exception('Invalid file type. Only JPG, PNG and WEBP are allowed.');
         }
         
         // Generate unique filename
