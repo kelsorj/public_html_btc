@@ -402,18 +402,27 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
         const section = modal.dataset.currentSection;
         const container = document.querySelector(`.ingredient-section:has(input[value="${section}"]) .ingredients-container`);
         
+        if (!container) {
+            console.error('Container not found for section:', section);
+            return;
+        }
+        
         const lines = bulkText.split('\n').filter(line => line.trim());
+        const startIndex = container.children.length;
         
         lines.forEach((line, index) => {
-            const parts = line.trim().match(/^([\d./]+)?\s*([^\d\s].*?)\s+(.+)$/) || [null, '', '', line.trim()];
-            const [, amount, unit, name] = parts;
+            // Match pattern: amount unit ingredient OR amount ingredient OR just ingredient
+            const match = line.trim().match(/^(?:(\d+(?:\/\d+)?(?:\.\d+)?)\s*)?([a-zA-Z]+\s+)?(.+)$/);
+            if (!match) return;
+            
+            const [, amount = '', unit = '', name = line.trim()] = match;
             
             const row = document.createElement('div');
             row.className = 'ingredient-row';
             row.innerHTML = `
-                <input type="text" name="ingredients[${encodeURIComponent(section)}][${container.children.length + index}][amount]" value="${amount || ''}" placeholder="Amount">
-                <input type="text" name="ingredients[${encodeURIComponent(section)}][${container.children.length + index}][unit]" value="${unit || ''}" placeholder="Unit">
-                <input type="text" name="ingredients[${encodeURIComponent(section)}][${container.children.length + index}][name]" value="${name}" placeholder="Ingredient" required>
+                <input type="text" name="ingredients[${encodeURIComponent(section)}][${startIndex + index}][amount]" value="${amount.trim()}" placeholder="Amount">
+                <input type="text" name="ingredients[${encodeURIComponent(section)}][${startIndex + index}][unit]" value="${unit.trim()}" placeholder="Unit">
+                <input type="text" name="ingredients[${encodeURIComponent(section)}][${startIndex + index}][name]" value="${name.trim()}" placeholder="Ingredient" required>
                 <button type="button" class="btn btn-secondary" onclick="this.parentElement.remove()">Remove</button>
             `;
             container.appendChild(row);
