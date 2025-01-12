@@ -84,11 +84,10 @@ foreach ($ingredients as $ingredient) {
     <main>
         <div class="recipe-details">
             <div class="recipe-header">
-                <a href="index.php" class="back-link">← Back to Recipes</a>
+                <a href="index.php#recipe-<?php echo $recipe['id']; ?>" class="back-link">← Back to Recipes</a>
                 <?php if ($recipe['user_id'] == $_SESSION['user_id']): ?>
                     <div class="recipe-actions">
-                        <button onclick="location.href='edit_recipe.php?id=<?php echo $recipe_id; ?>'" class="btn btn-primary">Edit Recipe</button>
-                        <button onclick="deleteRecipe(<?php echo $recipe_id; ?>)" class="btn btn-secondary">Delete Recipe</button>
+                        <a href="edit_recipe.php?id=<?php echo $recipe['id']; ?>" class="btn btn-primary">Edit Recipe</a>
                     </div>
                 <?php endif; ?>
             </div>

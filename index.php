@@ -95,7 +95,7 @@ if (!$recipes) {
                 <?php foreach ($recipes as $recipe): ?>
                     <!-- Debug output -->
                     <!-- <?php error_log("Categories for " . $recipe['title'] . ": " . $recipe['category_names']); ?> -->
-                    <div class="recipe-card" data-categories="<?php echo htmlspecialchars($recipe['category_names']); ?>">
+                    <div class="recipe-card" id="recipe-<?php echo $recipe['id']; ?>" data-categories="<?php echo htmlspecialchars($recipe['category_names']); ?>">
                         <a href="recipe.php?id=<?php echo $recipe['id']; ?>">
                             <?php if ($recipe['image_path']): ?>
                                 <img src="<?php echo htmlspecialchars($recipe['image_path']); ?>" alt="<?php echo htmlspecialchars($recipe['title']); ?>">
@@ -136,6 +136,24 @@ if (!$recipes) {
 
     searchInput.addEventListener('input', filterRecipes);
     categoryFilter.addEventListener('change', filterRecipes);
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // If there's a hash in the URL, scroll to that recipe card
+        if (window.location.hash) {
+            const targetCard = document.querySelector(window.location.hash);
+            if (targetCard) {
+                setTimeout(() => {
+                    targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Add a brief highlight effect
+                    targetCard.style.transition = 'background-color 0.5s';
+                    targetCard.style.backgroundColor = '#fff9e6';
+                    setTimeout(() => {
+                        targetCard.style.backgroundColor = '';
+                    }, 1000);
+                }, 100);
+            }
+        }
+    });
     </script>
 </body>
 </html> 
