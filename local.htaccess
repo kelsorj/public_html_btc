@@ -6,6 +6,11 @@ php_value post_max_size 50M
 
 # Keep other production settings
 RewriteEngine On
+
+# Skip rewrite for API directory
+RewriteRule ^api/ - [L]
+
+# Rewrite all other non-existent files/directories to index.php
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^ index.php [L] 
