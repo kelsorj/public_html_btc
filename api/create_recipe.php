@@ -83,12 +83,27 @@ try {
 
     // Insert ingredients
     if (isset($_POST['ingredients']) && is_array($_POST['ingredients'])) {
-        $stmt = $conn->prepare("INSERT INTO ingredients (recipe_id, name, amount, unit) VALUES (?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO ingredients (recipe_id, name, amount, unit, section) VALUES (?, ?, ?, ?, ?)");
         
-        foreach ($_POST['ingredients'] as $ingredient) {
-            if (!empty($ingredient['name'])) {
-                $stmt->bind_param("isss", $recipe_id, $ingredient['name'], $ingredient['amount'], $ingredient['unit']);
-                $stmt->execute();
+        foreach ($_POST['ingredients'] as $section => $ingredients) {
+            if (!is_array($ingredients)) {
+                continue;
+            }
+            foreach ($ingredients as $ingredient) {
+                if (!empty($ingredient['name'])) {
+                    $section_name = $section !== 'null' ? $section : '';
+                    $amount = isset($ingredient['amount']) ? $ingredient['amount'] : '';
+                    $unit = isset($ingredient['unit']) ? $ingredient['unit'] : '';
+                    
+                    $stmt->bind_param("issss", 
+                        $recipe_id, 
+                        $ingredient['name'],
+                        $amount,
+                        $unit,
+                        $section_name
+                    );
+                    $stmt->execute();
+                }
             }
         }
     }
