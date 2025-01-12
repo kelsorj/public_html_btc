@@ -67,7 +67,6 @@ foreach ($ingredients as $ingredient) {
                 <a href="index.php">Burning to Cook</a>
             </div>
             <div class="nav-links">
-                <a href="recipes.php">Recipes</a>
                 <a href="introduction.php">Introduction</a>
                 <button class="btn btn-secondary" onclick="location.href='logout.php'">Logout</button>
             </div>

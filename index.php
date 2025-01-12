@@ -28,7 +28,7 @@ $recipes_query = "SELECT r.*, c.name as category_name,
                  (SELECT COUNT(*) FROM ingredients WHERE recipe_id = r.id) as ingredient_count 
                  FROM recipes r 
                  LEFT JOIN categories c ON r.category_id = c.id 
-                 ORDER BY r.created_at DESC";
+                 ORDER BY r.title ASC";
 $recipes = $conn->query($recipes_query)->fetch_all(MYSQLI_ASSOC);
 ?>
 
