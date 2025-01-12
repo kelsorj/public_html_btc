@@ -24,7 +24,7 @@ $categories_query = "SELECT * FROM categories ORDER BY name";
 $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
 
 // Fetch recipes with their categories
-$query = "SELECT DISTINCT r.*, GROUP_CONCAT(c.name) as category_names 
+$query = "SELECT DISTINCT r.*, GROUP_CONCAT(TRIM(c.name) SEPARATOR ', ') as category_names 
           FROM recipes r 
           LEFT JOIN recipe_categories rc ON r.id = rc.recipe_id 
           LEFT JOIN categories c ON rc.category_id = c.id 
@@ -93,22 +93,18 @@ if (!$recipes) {
                 <div class="no-recipes">No recipes found</div>
             <?php else: ?>
                 <?php foreach ($recipes as $recipe): ?>
-                    <div class="recipe-card">
+                    <!-- Debug output -->
+                    <!-- <?php error_log("Categories for " . $recipe['title'] . ": " . $recipe['category_names']); ?> -->
+                    <div class="recipe-card" data-categories="<?php echo htmlspecialchars($recipe['category_names']); ?>">
                         <a href="recipe.php?id=<?php echo $recipe['id']; ?>">
                             <?php if ($recipe['image_path']): ?>
                                 <img src="<?php echo htmlspecialchars($recipe['image_path']); ?>" alt="<?php echo htmlspecialchars($recipe['title']); ?>">
                             <?php else: ?>
                                 <div class="placeholder-image"></div>
                             <?php endif; ?>
-                            <div class="recipe-info">
+                            <div class="recipe-content">
                                 <h3><?php echo htmlspecialchars($recipe['title']); ?></h3>
-                                <div class="recipe-meta">
-                                    <?php if ($recipe['category_names']): ?>
-                                        <span class="categories">
-                                            <?php echo htmlspecialchars($recipe['category_names']); ?>
-                                        </span>
-                                    <?php endif; ?>
-                                </div>
+                                <span class="categories"><?php echo htmlspecialchars($recipe['category_names']); ?></span>
                             </div>
                         </a>
                     </div>
