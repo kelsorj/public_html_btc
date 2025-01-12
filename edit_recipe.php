@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once 'config/database.php';
+require_once 'config/functions.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -45,6 +46,11 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Recipe - Burning to Cook</title>
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        body {
+            background-image: url('<?php echo getRandomBackground(); ?>');
+        }
+    </style>
 </head>
 <body>
     <header>

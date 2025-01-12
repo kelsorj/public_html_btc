@@ -17,6 +17,7 @@ if (!isset($_SESSION['user_id'])) {
 error_log("User is logged in with ID: " . $_SESSION['user_id']);
 
 require_once 'config/database.php';
+require_once 'config/functions.php';
 
 // Fetch all categories for the filter
 $categories_query = "SELECT * FROM categories ORDER BY name";
@@ -39,6 +40,11 @@ $recipes = $conn->query($recipes_query)->fetch_all(MYSQLI_ASSOC);
     <title>Burning to Cook</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background-image: url('<?php echo getRandomBackground(); ?>');
+        }
+    </style>
 </head>
 <body>
     <header>
