@@ -96,7 +96,7 @@ try {
     $conn->commit();
     
     $_SESSION['success_message'] = 'Recipe created successfully';
-    header('Location: ../recipe.php?id=' . $recipe_id);
+    header('Location: ../index.php');
     exit;
 
 } catch (Exception $e) {
