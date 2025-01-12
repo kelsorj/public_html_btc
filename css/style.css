@@ -688,4 +688,34 @@ textarea {
 
 .ingredient-buttons button {
     flex: 0 0 auto;
+}
+
+.ingredient-section {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.section-header {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    align-items: center;
+}
+
+.section-title {
+    flex: 1;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.ingredients-container {
+    margin-bottom: 1rem;
+}
+
+#ingredient-sections {
+    margin-bottom: 1rem;
 } 

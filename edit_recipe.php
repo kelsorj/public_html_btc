@@ -118,28 +118,63 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
 
                 <div class="form-group">
                     <label>Ingredients</label>
-                    <div id="ingredients-container">
-                        <?php foreach ($ingredients as $i => $ingredient): ?>
-                            <div class="ingredient-row">
-                                <input type="text" name="ingredients[<?php echo $i; ?>][amount]" 
-                                       value="<?php echo htmlspecialchars($ingredient['amount']); ?>" 
-                                       placeholder="Amount">
-                                <input type="text" name="ingredients[<?php echo $i; ?>][unit]" 
-                                       value="<?php echo htmlspecialchars($ingredient['unit']); ?>" 
-                                       placeholder="Unit">
-                                <input type="text" name="ingredients[<?php echo $i; ?>][name]" 
-                                       value="<?php echo htmlspecialchars($ingredient['name']); ?>" 
-                                       placeholder="Ingredient" required>
-                                <button type="button" class="btn btn-secondary" onclick="this.parentElement.remove()">Remove</button>
+                    <div id="ingredient-sections">
+                        <?php
+                        // Fetch ingredient sections
+                        $sections_query = "SELECT DISTINCT section FROM ingredients WHERE recipe_id = ? ORDER BY section";
+                        $stmt = $conn->prepare($sections_query);
+                        $stmt->bind_param("i", $recipe_id);
+                        $stmt->execute();
+                        $sections = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+                        
+                        // If no sections exist, create a default section
+                        if (empty($sections)) {
+                            $sections = [['section' => '']];
+                        }
+
+                        foreach ($sections as $section):
+                            // Fetch ingredients for this section
+                            $ingredients_query = "SELECT * FROM ingredients WHERE recipe_id = ? AND section = ? ORDER BY id";
+                            $stmt = $conn->prepare($ingredients_query);
+                            $stmt->bind_param("is", $recipe_id, $section['section']);
+                            $stmt->execute();
+                            $section_ingredients = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+                        ?>
+                            <div class="ingredient-section">
+                                <div class="section-header">
+                                    <input type="text" 
+                                           class="section-title" 
+                                           name="sections[]" 
+                                           placeholder="Section Name (optional)" 
+                                           value="<?php echo htmlspecialchars($section['section']); ?>">
+                                    <?php if (!empty($sections) && count($sections) > 1): ?>
+                                        <button type="button" class="btn btn-secondary btn-sm" onclick="removeSection(this)">Remove Section</button>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="ingredients-container">
+                                    <?php foreach ($section_ingredients as $i => $ingredient): ?>
+                                        <div class="ingredient-row">
+                                            <input type="text" name="ingredients[<?php echo htmlspecialchars($section['section']); ?>][<?php echo $i; ?>][amount]" 
+                                                   value="<?php echo htmlspecialchars($ingredient['amount']); ?>" 
+                                                   placeholder="Amount">
+                                            <input type="text" name="ingredients[<?php echo htmlspecialchars($section['section']); ?>][<?php echo $i; ?>][unit]" 
+                                                   value="<?php echo htmlspecialchars($ingredient['unit']); ?>" 
+                                                   placeholder="Unit">
+                                            <input type="text" name="ingredients[<?php echo htmlspecialchars($section['section']); ?>][<?php echo $i; ?>][name]" 
+                                                   value="<?php echo htmlspecialchars($ingredient['name']); ?>" 
+                                                   placeholder="Ingredient" required>
+                                            <button type="button" class="btn btn-secondary" onclick="this.parentElement.remove()">Remove</button>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                                <div class="ingredient-buttons">
+                                    <button type="button" class="btn btn-secondary" onclick="addIngredientRow(this)">Add Ingredient</button>
+                                    <button type="button" class="btn btn-secondary" onclick="showBulkAddModal(this)">Bulk Add Ingredients</button>
+                                </div>
                             </div>
                         <?php endforeach; ?>
                     </div>
-                    <div class="ingredient-buttons">
-                        <button type="button" class="btn btn-secondary" onclick="addIngredientRow()">Add Ingredient</button>
-                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('bulk-input-modal').style.display='block'">
-                            Bulk Add Ingredients
-                        </button>
-                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="addNewSection()">Add New Section</button>
                 </div>
 
                 <div class="notes-section">
@@ -209,43 +244,190 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const container = document.getElementById('ingredients-container');
-        const addButton = document.getElementById('add-ingredient');
-        let ingredientCount = <?php echo count($ingredients); ?>;
+        // Category select handler
+        const categorySelect = document.getElementById('category');
+        if (categorySelect) {
+            categorySelect.addEventListener('change', function() {
+                const newCategoryInput = document.getElementById('new-category-input');
+                if (this.value === 'new') {
+                    newCategoryInput.style.display = 'flex';
+                    this.style.display = 'none';
+                }
+            });
+        }
 
-        addButton.addEventListener('click', function() {
+        // Initialize existing section title listeners
+        const existingTitles = document.querySelectorAll('.section-title');
+        existingTitles.forEach(titleInput => {
+            titleInput.dataset.oldValue = titleInput.value || '';
+            addSectionTitleListener(titleInput);
+        });
+
+        // Initialize ingredient container event listeners
+        const container = document.getElementById('ingredients-container');
+        if (container) {
+            container.addEventListener('click', function(e) {
+                if (e.target.classList.contains('remove-ingredient')) {
+                    e.target.parentElement.remove();
+                }
+            });
+        }
+
+        // Modal click outside handler
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+                // Clear any input fields if needed
+                const storyText = document.getElementById('storyText');
+                const storyDate = document.getElementById('storyDate');
+                const noteText = document.getElementById('noteText');
+                const bulkIngredients = document.getElementById('bulk-ingredients');
+                
+                if (storyText) storyText.value = '';
+                if (storyDate) storyDate.value = '';
+                if (noteText) noteText.value = '';
+                if (bulkIngredients) bulkIngredients.value = '';
+            }
+        };
+    });
+
+    function cancelNewCategory() {
+        const categorySelect = document.getElementById('category');
+        const newCategoryInput = document.getElementById('new-category-input');
+        if (categorySelect && newCategoryInput) {
+            categorySelect.value = '';
+            categorySelect.style.display = 'block';
+            newCategoryInput.style.display = 'none';
+            const newCategoryName = document.getElementById('new-category-name');
+            if (newCategoryName) {
+                newCategoryName.value = '';
+            }
+        }
+    }
+
+    // Ingredient Section Management Functions
+    function addNewSection() {
+        const ingredientSections = document.getElementById('ingredient-sections');
+        const newSection = document.createElement('div');
+        newSection.className = 'ingredient-section';
+        newSection.innerHTML = `
+            <div class="section-header">
+                <input type="text" class="section-title" name="sections[]" placeholder="Section Name (optional)" data-old-value="">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="removeSection(this)">Remove Section</button>
+            </div>
+            <div class="ingredients-container"></div>
+            <div class="ingredient-buttons">
+                <button type="button" class="btn btn-secondary" onclick="addIngredientRow(this)">Add Ingredient</button>
+                <button type="button" class="btn btn-secondary" onclick="showBulkAddModal(this)">Bulk Add Ingredients</button>
+            </div>
+        `;
+        ingredientSections.appendChild(newSection);
+        
+        // Add change event listener to the new section title
+        const sectionTitle = newSection.querySelector('.section-title');
+        addSectionTitleListener(sectionTitle);
+    }
+
+    function addSectionTitleListener(titleInput) {
+        titleInput.addEventListener('change', function() {
+            const section = this.closest('.ingredient-section');
+            const oldValue = this.dataset.oldValue || '';
+            const newValue = this.value || '';
+            
+            // Update all ingredient input names in this section
+            section.querySelectorAll('.ingredient-row input').forEach(input => {
+                const name = input.getAttribute('name');
+                if (name) {
+                    input.setAttribute('name', name.replace(
+                        `ingredients[${encodeURIComponent(oldValue)}]`,
+                        `ingredients[${encodeURIComponent(newValue)}]`
+                    ));
+                }
+            });
+            
+            this.dataset.oldValue = newValue;
+        });
+    }
+
+    function removeSection(button) {
+        if (confirm('Are you sure you want to remove this section and all its ingredients?')) {
+            button.closest('.ingredient-section').remove();
+        }
+    }
+
+    function addIngredientRow(button) {
+        const container = button.closest('.ingredient-section').querySelector('.ingredients-container');
+        const section = button.closest('.ingredient-section').querySelector('.section-title').value || '';
+        const ingredientCount = container.children.length;
+        
+        const row = document.createElement('div');
+        row.className = 'ingredient-row';
+        row.innerHTML = `
+            <input type="text" name="ingredients[${encodeURIComponent(section)}][${ingredientCount}][amount]" placeholder="Amount">
+            <input type="text" name="ingredients[${encodeURIComponent(section)}][${ingredientCount}][unit]" placeholder="Unit">
+            <input type="text" name="ingredients[${encodeURIComponent(section)}][${ingredientCount}][name]" placeholder="Ingredient" required>
+            <button type="button" class="btn btn-secondary" onclick="this.parentElement.remove()">Remove</button>
+        `;
+        container.appendChild(row);
+    }
+
+    function showBulkAddModal(button) {
+        const modal = document.getElementById('bulk-input-modal');
+        const section = button.closest('.ingredient-section').querySelector('.section-title').value || '';
+        // Store reference to the current section
+        modal.dataset.currentSection = section;
+        modal.style.display = 'block';
+    }
+
+    function addBulkIngredients() {
+        const modal = document.getElementById('bulk-input-modal');
+        const bulkText = document.getElementById('bulk-ingredients').value;
+        const section = modal.dataset.currentSection;
+        const container = document.querySelector(`.ingredient-section:has(input[value="${section}"]) .ingredients-container`);
+        
+        const lines = bulkText.split('\n').filter(line => line.trim());
+        
+        lines.forEach((line, index) => {
+            const parts = line.trim().match(/^([\d./]+)?\s*([^\d\s].*?)\s+(.+)$/) || [null, '', '', line.trim()];
+            const [, amount, unit, name] = parts;
+            
             const row = document.createElement('div');
             row.className = 'ingredient-row';
             row.innerHTML = `
-                <input type="text" name="ingredients[${ingredientCount}][name]" placeholder="Ingredient name" required>
-                <input type="text" name="ingredients[${ingredientCount}][amount]" placeholder="Amount" required>
-                <input type="text" name="ingredients[${ingredientCount}][unit]" placeholder="Unit" required>
-                <button type="button" class="btn btn-secondary remove-ingredient">Remove</button>
+                <input type="text" name="ingredients[${encodeURIComponent(section)}][${container.children.length + index}][amount]" value="${amount || ''}" placeholder="Amount">
+                <input type="text" name="ingredients[${encodeURIComponent(section)}][${container.children.length + index}][unit]" value="${unit || ''}" placeholder="Unit">
+                <input type="text" name="ingredients[${encodeURIComponent(section)}][${container.children.length + index}][name]" value="${name}" placeholder="Ingredient" required>
+                <button type="button" class="btn btn-secondary" onclick="this.parentElement.remove()">Remove</button>
             `;
             container.appendChild(row);
-            ingredientCount++;
         });
-
-        container.addEventListener('click', function(e) {
-            if (e.target.classList.contains('remove-ingredient')) {
-                e.target.parentElement.remove();
-            }
-        });
-    });
+        
+        modal.style.display = 'none';
+        document.getElementById('bulk-ingredients').value = '';
+    }
 
     // Note Modal Functions
     function showAddNoteModal() {
-        document.getElementById('noteModal').style.display = 'block';
+        const modal = document.getElementById('noteModal');
+        if (modal) {
+            modal.style.display = 'block';
+        }
     }
 
     function closeNoteModal() {
-        document.getElementById('noteModal').style.display = 'none';
-        document.getElementById('noteText').value = '';
+        const modal = document.getElementById('noteModal');
+        const noteText = document.getElementById('noteText');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+        if (noteText) {
+            noteText.value = '';
+        }
     }
 
     function saveNote() {
-        const noteText = document.getElementById('noteText').value.trim();
-        if (!noteText) {
+        const noteText = document.getElementById('noteText');
+        if (!noteText || !noteText.value.trim()) {
             alert('Please enter a note');
             return;
         }
@@ -257,7 +439,7 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
             },
             body: JSON.stringify({
                 recipe_id: <?php echo $recipe_id; ?>,
-                note: noteText
+                note: noteText.value.trim()
             })
         })
         .then(response => response.json())
@@ -376,29 +558,29 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
         });
     }
 
-    // Close modals when clicking outside
-    window.onclick = function(event) {
-        if (event.target.className === 'modal') {
-            event.target.style.display = 'none';
-        }
-    }
-
-    document.getElementById('category').addEventListener('change', function() {
-        const newCategoryInput = document.getElementById('new-category-input');
-        if (this.value === 'new') {
-            newCategoryInput.style.display = 'flex';
-            this.style.display = 'none';
+    // Add form submit handler
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('edit-recipe-form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                // Ensure empty sections are handled properly
+                document.querySelectorAll('.section-title').forEach(title => {
+                    if (!title.value.trim()) {
+                        const section = title.closest('.ingredient-section');
+                        section.querySelectorAll('.ingredient-row input').forEach(input => {
+                            const name = input.getAttribute('name');
+                            if (name) {
+                                input.setAttribute('name', name.replace(
+                                    /ingredients\[[^\]]*\]/,
+                                    'ingredients[default]'
+                                ));
+                            }
+                        });
+                    }
+                });
+            });
         }
     });
-
-    function cancelNewCategory() {
-        const categorySelect = document.getElementById('category');
-        const newCategoryInput = document.getElementById('new-category-input');
-        categorySelect.value = '';
-        categorySelect.style.display = 'block';
-        newCategoryInput.style.display = 'none';
-        document.getElementById('new-category-name').value = '';
-    }
     </script>
 
     <div id="noteModal" class="modal">

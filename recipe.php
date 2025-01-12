@@ -29,11 +29,21 @@ if (!$recipe) {
 }
 
 // Fetch ingredients
-$ingredients_query = "SELECT * FROM ingredients WHERE recipe_id = ? ORDER BY id";
+$ingredients_query = "SELECT * FROM ingredients WHERE recipe_id = ? ORDER BY section, id";
 $stmt = $conn->prepare($ingredients_query);
 $stmt->bind_param("i", $recipe_id);
 $stmt->execute();
 $ingredients = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
+// Group ingredients by section
+$grouped_ingredients = [];
+foreach ($ingredients as $ingredient) {
+    $section = $ingredient['section'] ?: 'default';
+    if (!isset($grouped_ingredients[$section])) {
+        $grouped_ingredients[$section] = [];
+    }
+    $grouped_ingredients[$section][] = $ingredient;
+}
 ?>
 
 <!DOCTYPE html>
@@ -85,15 +95,20 @@ $ingredients = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
             <div class="ingredients-section">
                 <h2>Ingredients</h2>
-                <ul class="ingredients-list">
-                    <?php foreach ($ingredients as $ingredient): ?>
-                        <li>
-                            <span class="amount"><?php echo $ingredient['amount']; ?></span>
-                            <span class="unit"><?php echo htmlspecialchars($ingredient['unit']); ?></span>
-                            <span class="ingredient"><?php echo htmlspecialchars($ingredient['name']); ?></span>
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
+                <?php foreach ($grouped_ingredients as $section => $section_ingredients): ?>
+                    <?php if ($section !== 'default'): ?>
+                        <h3><?php echo htmlspecialchars($section); ?></h3>
+                    <?php endif; ?>
+                    <ul class="ingredients-list">
+                        <?php foreach ($section_ingredients as $ingredient): ?>
+                            <li>
+                                <span class="amount"><?php echo $ingredient['amount']; ?></span>
+                                <span class="unit"><?php echo htmlspecialchars($ingredient['unit']); ?></span>
+                                <span class="ingredient"><?php echo htmlspecialchars($ingredient['name']); ?></span>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endforeach; ?>
             </div>
 
             <div class="instructions-section">

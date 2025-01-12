@@ -139,15 +139,31 @@ try {
     $stmt->bind_param("i", $recipe_id);
     $stmt->execute();
 
-    // Insert new ingredients
+    // Insert new ingredients with sections
     if (isset($_POST['ingredients']) && is_array($_POST['ingredients'])) {
-        $insert_query = "INSERT INTO ingredients (recipe_id, name, amount, unit) VALUES (?, ?, ?, ?)";
-        $stmt = $conn->prepare($insert_query);
+        $stmt = $conn->prepare("INSERT INTO ingredients (recipe_id, name, amount, unit, section) VALUES (?, ?, ?, ?, ?)");
         
-        foreach ($_POST['ingredients'] as $ingredient) {
-            if (!empty($ingredient['name']) && isset($ingredient['amount']) && !empty($ingredient['unit'])) {
-                $stmt->bind_param("isss", $recipe_id, $ingredient['name'], $ingredient['amount'], $ingredient['unit']);
-                $stmt->execute();
+        foreach ($_POST['ingredients'] as $section => $ingredients) {
+            if (!is_array($ingredients)) {
+                continue;
+            }
+            foreach ($ingredients as $ingredient) {
+                if (!empty($ingredient['name'])) {
+                    $section_name = $section !== 'null' ? $section : '';
+                    $amount = isset($ingredient['amount']) ? $ingredient['amount'] : '';
+                    $unit = isset($ingredient['unit']) ? $ingredient['unit'] : '';
+                    
+                    $stmt->bind_param("issss", 
+                        $recipe_id, 
+                        $ingredient['name'], 
+                        $amount,
+                        $unit,
+                        $section_name
+                    );
+                    if (!$stmt->execute()) {
+                        throw new Exception("Error inserting ingredient: " . $stmt->error);
+                    }
+                }
             }
         }
     }
@@ -165,7 +181,7 @@ try {
 } catch (Exception $e) {
     $conn->rollback();
     error_log("Error updating recipe: " . $e->getMessage());
-    $_SESSION['error_message'] = 'Error updating recipe. Please try again.';
+    $_SESSION['error_message'] = 'Error updating recipe: ' . $e->getMessage();
     
     // Clean output buffer before sending headers
     ob_end_clean();
