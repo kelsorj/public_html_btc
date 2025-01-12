@@ -429,8 +429,22 @@ nav {
 }
 
 .form-actions {
+    margin: 2rem 0;
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+.form-actions-top {
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 1rem;
+}
+
+.form-actions-bottom {
     margin-top: 2rem;
-    text-align: right;
+    border-top: 1px solid #eee;
+    padding-top: 1rem;
 }
 
 .ingredients-section {
@@ -521,6 +535,7 @@ textarea {
     max-width: 600px;
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    position: relative;
 }
 
 .modal-content textarea {

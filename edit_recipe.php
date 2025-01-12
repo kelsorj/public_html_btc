@@ -67,14 +67,18 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
 
     <main>
         <div class="recipe-form">
-            <div class="form-header">
-                <h1>Edit Recipe</h1>
-                <a href="recipe.php?id=<?php echo $recipe_id; ?>" class="btn btn-secondary">Cancel</a>
-            </div>
-
-            <form id="edit-recipe-form" method="POST" action="api/update_recipe.php" enctype="multipart/form-data">
-                <input type="hidden" name="recipe_id" value="<?php echo $recipe_id; ?>">
+            <form action="api/update_recipe.php" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="recipe_id" value="<?php echo $recipe['id']; ?>">
                 
+                <div class="form-actions form-actions-top">
+                    <button type="submit" class="btn btn-primary">Save Recipe</button>
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href='recipe.php?id=<?php echo $recipe['id']; ?>'">Cancel</button>
+                </div>
+
+                <div class="form-header">
+                    <h1>Edit Recipe</h1>
+                </div>
+
                 <div class="form-group">
                     <label for="title">Recipe Title</label>
                     <input type="text" id="title" name="title" value="<?php echo htmlspecialchars($recipe['title']); ?>" required>
@@ -247,8 +251,9 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
                     <button type="button" class="btn btn-primary" onclick="showAddStoryModal()">Add Story</button>
                 </div>
 
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                <div class="form-actions form-actions-bottom">
+                    <button type="submit" class="btn btn-primary">Save Recipe</button>
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href='recipe.php?id=<?php echo $recipe['id']; ?>'">Cancel</button>
                 </div>
             </form>
         </div>
@@ -646,6 +651,23 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
         .catch(error => {
             console.error('Error:', error);
             alert('Error adding category');
+        });
+    }
+
+    document.addEventListener('click', function(event) {
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(modal => {
+            if (event.target === modal) {
+                closeModal(modal);
+            }
+        });
+    });
+
+    function closeModal(modal) {
+        modal.style.display = 'none';
+        // Clear any input fields in the modal
+        modal.querySelectorAll('input, textarea').forEach(input => {
+            input.value = '';
         });
     }
     </script>
