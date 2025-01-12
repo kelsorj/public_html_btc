@@ -18,6 +18,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+// Debug logging
+error_log("POST data received: " . print_r($_POST, true));
+error_log("FILES data received: " . print_r($_FILES, true));
+
 // Start transaction
 $conn->begin_transaction();
 
@@ -85,11 +89,16 @@ try {
     if (isset($_POST['ingredients']) && is_array($_POST['ingredients'])) {
         $stmt = $conn->prepare("INSERT INTO ingredients (recipe_id, name, amount, unit, section) VALUES (?, ?, ?, ?, ?)");
         
+        // Ensure we have at least one valid ingredient
+        $has_ingredients = false;
+        
         foreach ($_POST['ingredients'] as $index => $ingredient) {
-            // Skip if ingredient name is empty
+            // Skip if ingredient name is empty or not set
             if (!isset($ingredient['name']) || trim($ingredient['name']) === '') {
                 continue;
             }
+            
+            $has_ingredients = true;
             
             // Clean and prepare values
             $name = trim($ingredient['name']);
@@ -104,6 +113,10 @@ try {
             if (!$stmt->execute()) {
                 throw new Exception("Error inserting ingredient: " . $stmt->error);
             }
+        }
+        
+        if (!$has_ingredients) {
+            throw new Exception("Please add at least one ingredient with a name to the recipe");
         }
     } else {
         throw new Exception("Please add at least one ingredient to the recipe");
