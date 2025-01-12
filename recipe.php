@@ -88,6 +88,7 @@ foreach ($ingredients as $ingredient) {
                 <?php if ($recipe['user_id'] == $_SESSION['user_id']): ?>
                     <div class="recipe-actions">
                         <a href="edit_recipe.php?id=<?php echo $recipe['id']; ?>" class="btn btn-primary">Edit Recipe</a>
+                        <button onclick="deleteRecipe(<?php echo $recipe['id']; ?>)" class="btn btn-secondary">Delete Recipe</button>
                     </div>
                 <?php endif; ?>
             </div>
