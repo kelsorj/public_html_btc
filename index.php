@@ -66,12 +66,7 @@ if (!$recipes) {
                 </div>
                 <div class="category-filter">
                     <select id="category-filter">
-                        <option value="">All Categories</option>
-                        <?php foreach ($categories as $category): ?>
-                            <option value="<?php echo htmlspecialchars($category['name']); ?>">
-                                <?php echo htmlspecialchars($category['name']); ?>
-                            </option>
-                        <?php endforeach; ?>
+                        <!-- Categories will be populated by JavaScript -->
                     </select>
                 </div>
             </div>
@@ -114,46 +109,68 @@ if (!$recipes) {
     </main>
 
     <script>
-    // Search and filter functionality
-    const searchInput = document.getElementById('search');
-    const categoryFilter = document.getElementById('category-filter');
-    const recipeCards = document.querySelectorAll('.recipe-card');
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fetch categories and build filter options
+            fetch('api/get_categories.php')
+                .then(response => response.json())
+                .then(categories => {
+                    const categoryFilter = document.getElementById('category-filter');
+                    if (categoryFilter) {
+                        // Add "All" option
+                        const allOption = document.createElement('option');
+                        allOption.value = '';
+                        allOption.textContent = 'All Categories';
+                        categoryFilter.appendChild(allOption);
+                        
+                        // Add category options
+                        categories.forEach(category => {
+                            const option = document.createElement('option');
+                            option.value = category.name;
+                            option.textContent = category.name;
+                            categoryFilter.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => console.error('Error fetching categories:', error));
 
-    function filterRecipes() {
-        const searchTerm = searchInput.value.toLowerCase();
-        const selectedCategory = categoryFilter.value.toLowerCase();
+            // Filter functionality
+            const searchInput = document.getElementById('search');
+            const categoryFilter = document.getElementById('category-filter');
+            const recipeCards = document.querySelectorAll('.recipe-card');
 
-        recipeCards.forEach(card => {
-            const title = card.querySelector('h3').textContent.toLowerCase();
-            const categories = card.querySelector('.categories')?.textContent.toLowerCase() || '';
-            
-            const matchesSearch = title.includes(searchTerm);
-            const matchesCategory = !selectedCategory || categories.includes(selectedCategory);
+            function filterRecipes() {
+                const searchTerm = searchInput.value.toLowerCase();
+                const selectedCategory = categoryFilter.value;
 
-            card.style.display = matchesSearch && matchesCategory ? 'block' : 'none';
-        });
-    }
-
-    searchInput.addEventListener('input', filterRecipes);
-    categoryFilter.addEventListener('change', filterRecipes);
-
-    document.addEventListener('DOMContentLoaded', function() {
-        // If there's a hash in the URL, scroll to that recipe card
-        if (window.location.hash) {
-            const targetCard = document.querySelector(window.location.hash);
-            if (targetCard) {
-                setTimeout(() => {
-                    targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    // Add a brief highlight effect
-                    targetCard.style.transition = 'background-color 0.5s';
-                    targetCard.style.backgroundColor = '#fff9e6';
-                    setTimeout(() => {
-                        targetCard.style.backgroundColor = '';
-                    }, 1000);
-                }, 100);
+                recipeCards.forEach(card => {
+                    const title = card.querySelector('h3').textContent.toLowerCase();
+                    const categories = card.querySelector('.categories').textContent.toLowerCase();
+                    
+                    const matchesSearch = title.includes(searchTerm);
+                    const matchesCategory = !selectedCategory || categories.includes(selectedCategory.toLowerCase());
+                    
+                    card.style.display = matchesSearch && matchesCategory ? 'block' : 'none';
+                });
             }
-        }
-    });
+
+            if (searchInput) searchInput.addEventListener('input', filterRecipes);
+            if (categoryFilter) categoryFilter.addEventListener('change', filterRecipes);
+
+            // Handle hash in URL for returning to specific recipe
+            if (window.location.hash) {
+                const targetCard = document.querySelector(window.location.hash);
+                if (targetCard) {
+                    setTimeout(() => {
+                        targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        targetCard.style.transition = 'background-color 0.5s';
+                        targetCard.style.backgroundColor = '#fff9e6';
+                        setTimeout(() => {
+                            targetCard.style.backgroundColor = '';
+                        }, 1000);
+                    }, 100);
+                }
+            }
+        });
     </script>
 </body>
 </html> 
