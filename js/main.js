@@ -1,12 +1,13 @@
 document.addEventListener('DOMContentLoaded', function() {
-    loadRecipes();
-
-    // Search functionality
+    // Only try to load recipes if we're on the recipes page
     const searchInput = document.getElementById('recipe-search');
     const categoryFilter = document.getElementById('category-filter');
-
-    searchInput.addEventListener('input', debounce(loadRecipes, 300));
-    categoryFilter.addEventListener('change', loadRecipes);
+    
+    if (searchInput && categoryFilter) {
+        loadRecipes();
+        searchInput.addEventListener('input', debounce(loadRecipes, 300));
+        categoryFilter.addEventListener('change', loadRecipes);
+    }
 });
 
 function loadRecipes() {

@@ -81,13 +81,21 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
 
                 <div class="form-group">
                     <label>Ingredients</label>
-                    <div id="ingredients-container">
-                        <!-- Ingredient rows will be added here -->
+                    <div id="ingredient-sections">
+                        <div class="ingredient-section">
+                            <div class="section-header">
+                                <input type="text" class="section-title" name="sections[]" placeholder="Section Name (optional)" value="" data-old-value="">
+                            </div>
+                            <div class="ingredients-container">
+                                <!-- Ingredient rows will be added here -->
+                            </div>
+                            <div class="ingredient-buttons">
+                                <button type="button" class="btn btn-secondary" onclick="addIngredientRow(this)">Add Ingredient</button>
+                                <button type="button" class="btn btn-secondary" onclick="showBulkAddModal(this)">Bulk Add Ingredients</button>
+                            </div>
+                        </div>
                     </div>
-                    <button type="button" class="btn btn-secondary" onclick="addIngredientRow()">Add Ingredient</button>
-                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('bulk-input-modal').style.display='block'">
-                        Bulk Add Ingredients
-                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="addNewSection()">Add New Section</button>
                 </div>
 
                 <div class="form-actions">
@@ -119,20 +127,122 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
     <script>
         // Add first ingredient row on page load
         document.addEventListener('DOMContentLoaded', function() {
-            addIngredientRow();
+            // Initialize existing section title listeners
+            const existingTitles = document.querySelectorAll('.section-title');
+            existingTitles.forEach(titleInput => {
+                titleInput.dataset.oldValue = titleInput.value || '';
+                addSectionTitleListener(titleInput);
+            });
         });
 
-        function addIngredientRow(amount = '', unit = '', name = '') {
-            const container = document.getElementById('ingredients-container');
+        function addSectionTitleListener(titleInput) {
+            titleInput.addEventListener('change', function() {
+                const section = this.closest('.ingredient-section');
+                const oldValue = this.dataset.oldValue || '';
+                const newValue = this.value || '';
+                
+                section.querySelectorAll('.ingredient-row input').forEach(input => {
+                    const name = input.getAttribute('name');
+                    if (name) {
+                        const newName = name.replace(
+                            `ingredients[${encodeURIComponent(oldValue)}]`,
+                            `ingredients[${encodeURIComponent(newValue)}]`
+                        );
+                        input.setAttribute('name', newName);
+                    }
+                });
+                
+                this.dataset.oldValue = newValue;
+            });
+        }
+
+        function addNewSection() {
+            const ingredientSections = document.getElementById('ingredient-sections');
+            const newSection = document.createElement('div');
+            newSection.className = 'ingredient-section';
+            newSection.innerHTML = `
+                <div class="section-header">
+                    <input type="text" class="section-title" name="sections[]" placeholder="Section Name (optional)" value="" data-old-value="">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="removeSection(this)">Remove Section</button>
+                </div>
+                <div class="ingredients-container"></div>
+                <div class="ingredient-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="addIngredientRow(this)">Add Ingredient</button>
+                    <button type="button" class="btn btn-secondary" onclick="showBulkAddModal(this)">Bulk Add Ingredients</button>
+                </div>
+            `;
+            ingredientSections.appendChild(newSection);
+            
+            // Add change event listener to the new section title
+            const sectionTitle = newSection.querySelector('.section-title');
+            addSectionTitleListener(sectionTitle);
+        }
+
+        function removeSection(button) {
+            if (confirm('Are you sure you want to remove this section and all its ingredients?')) {
+                button.closest('.ingredient-section').remove();
+            }
+        }
+
+        function addIngredientRow(button) {
+            const container = button.closest('.ingredient-section').querySelector('.ingredients-container');
+            const section = button.closest('.ingredient-section').querySelector('.section-title');
+            const sectionName = section ? section.value || '' : '';
+            const ingredientCount = container.children.length;
+            
             const row = document.createElement('div');
             row.className = 'ingredient-row';
             row.innerHTML = `
-                <input type="text" name="ingredients[${container.children.length}][amount]" placeholder="Amount" value="${amount}">
-                <input type="text" name="ingredients[${container.children.length}][unit]" placeholder="Unit" value="${unit}">
-                <input type="text" name="ingredients[${container.children.length}][name]" placeholder="Ingredient" required value="${name}">
+                <input type="text" name="ingredients[${encodeURIComponent(sectionName)}][${ingredientCount}][amount]" placeholder="Amount">
+                <input type="text" name="ingredients[${encodeURIComponent(sectionName)}][${ingredientCount}][unit]" placeholder="Unit">
+                <input type="text" name="ingredients[${encodeURIComponent(sectionName)}][${ingredientCount}][name]" placeholder="Ingredient" required>
                 <button type="button" class="btn btn-secondary" onclick="this.parentElement.remove()">Remove</button>
             `;
             container.appendChild(row);
+        }
+
+        function showBulkAddModal(button) {
+            const modal = document.getElementById('bulk-input-modal');
+            const section = button.closest('.ingredient-section').querySelector('.section-title').value || '';
+            // Store reference to the current section
+            modal.dataset.currentSection = section;
+            modal.style.display = 'block';
+        }
+
+        function addBulkIngredients() {
+            const modal = document.getElementById('bulk-input-modal');
+            const bulkText = document.getElementById('bulk-ingredients').value;
+            const section = modal.dataset.currentSection;
+            const container = document.querySelector(`.ingredient-section:has(input[value="${section}"]) .ingredients-container`);
+            
+            if (!container) {
+                console.error('Container not found for section:', section);
+                return;
+            }
+            
+            const lines = bulkText.split('\n').filter(line => line.trim());
+            const startIndex = container.children.length;
+            
+            lines.forEach((line, index) => {
+                // Match pattern: amount unit ingredient OR amount ingredient OR just ingredient
+                const match = line.trim().match(/^(?:(\d+(?:\/\d+)?(?:\.\d+)?)\s*)?([a-zA-Z]+\s+)?(.+)$/);
+                if (!match) return;
+                
+                const [, amount = '', unit = '', name = line.trim()] = match;
+                
+                const row = document.createElement('div');
+                row.className = 'ingredient-row';
+                row.innerHTML = `
+                    <input type="text" name="ingredients[${encodeURIComponent(section)}][${startIndex + index}][amount]" value="${amount.trim()}" placeholder="Amount">
+                    <input type="text" name="ingredients[${encodeURIComponent(section)}][${startIndex + index}][unit]" value="${unit.trim()}" placeholder="Unit">
+                    <input type="text" name="ingredients[${encodeURIComponent(section)}][${startIndex + index}][name]" value="${name.trim()}" placeholder="Ingredient" required>
+                    <button type="button" class="btn btn-secondary" onclick="this.parentElement.remove()">Remove</button>
+                `;
+                container.appendChild(row);
+            });
+            
+            modal.style.display = 'none';
+            document.getElementById('bulk-ingredients').value = '';
         }
 
         // Category selection handling

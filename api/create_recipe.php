@@ -5,16 +5,24 @@ require_once '../config/functions.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header('Content-Type: application/json');
-    http_response_code(401);
-    echo json_encode(['error' => 'Unauthorized']);
+    if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+        header('Content-Type: application/json');
+        http_response_code(401);
+        echo json_encode(['error' => 'Unauthorized']);
+    } else {
+        header('Location: ../login.php');
+    }
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Content-Type: application/json');
-    http_response_code(405);
-    echo json_encode(['error' => 'Method not allowed']);
+    if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+        header('Content-Type: application/json');
+        http_response_code(405);
+        echo json_encode(['error' => 'Method not allowed']);
+    } else {
+        header('Location: ../add_recipe.php');
+    }
     exit;
 }
 
@@ -125,13 +133,24 @@ try {
     $conn->commit();
     
     $_SESSION['success_message'] = 'Recipe created successfully';
-    header('Location: ../index.php');
+    if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'redirect' => '../index.php']);
+    } else {
+        header('Location: ../index.php');
+    }
     exit;
 
 } catch (Exception $e) {
     $conn->rollback();
     error_log("Error creating recipe: " . $e->getMessage());
     $_SESSION['error_message'] = 'Error creating recipe: ' . $e->getMessage();
-    header('Location: ../add_recipe.php');
+    if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+        header('Content-Type: application/json');
+        http_response_code(400);
+        echo json_encode(['error' => $e->getMessage()]);
+    } else {
+        header('Location: ../add_recipe.php');
+    }
     exit;
 } 
