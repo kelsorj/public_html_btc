@@ -12,19 +12,27 @@ if (!isset($_SESSION['user_id'])) {
 // Get recipe ID from URL
 $recipe_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-// Fetch recipe details
-$query = "SELECT r.*, c.name as category_name, u.username as author 
+// Fetch recipe details with categories
+$query = "SELECT r.*, GROUP_CONCAT(c.name) as category_names 
           FROM recipes r 
-          LEFT JOIN categories c ON r.category_id = c.id 
-          LEFT JOIN users u ON r.user_id = u.id 
-          WHERE r.id = ?";
+          LEFT JOIN recipe_categories rc ON r.id = rc.recipe_id 
+          LEFT JOIN categories c ON rc.category_id = c.id 
+          WHERE r.id = ? 
+          GROUP BY r.id";
 
 $stmt = $conn->prepare($query);
 $stmt->bind_param("i", $recipe_id);
 $stmt->execute();
 $recipe = $stmt->get_result()->fetch_assoc();
 
+// If recipe doesn't exist, redirect
 if (!$recipe) {
+    header('Location: index.php');
+    exit;
+}
+
+// Verify recipe belongs to user
+if ($recipe['user_id'] != $_SESSION['user_id']) {
     header('Location: index.php');
     exit;
 }
@@ -86,10 +94,14 @@ foreach ($ingredients as $ingredient) {
             </div>
 
             <h1><?php echo htmlspecialchars($recipe['title']); ?></h1>
-            <p class="recipe-meta">
-                <span class="category"><?php echo htmlspecialchars($recipe['category_name']); ?></span>
-                <span class="author">By <?php echo htmlspecialchars($recipe['author']); ?></span>
-            </p>
+            <div class="recipe-meta">
+                <?php if ($recipe['category_names']): ?>
+                    <span class="categories">
+                        <?php echo htmlspecialchars($recipe['category_names']); ?>
+                    </span>
+                <?php endif; ?>
+                <span class="date">Added on <?php echo date('F j, Y', strtotime($recipe['created_at'])); ?></span>
+            </div>
 
             <?php if ($recipe['image_path']): ?>
                 <div class="recipe-image">

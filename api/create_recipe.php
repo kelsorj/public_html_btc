@@ -63,10 +63,20 @@ try {
     }
 
     // Insert recipe
-    $stmt = $conn->prepare("INSERT INTO recipes (title, category_id, instructions, image_path, user_id) VALUES (?, ?, ?, ?, ?)");
-    $stmt->bind_param("sissi", $_POST['title'], $category_id, $_POST['instructions'], $image_path, $_SESSION['user_id']);
+    $stmt = $conn->prepare("INSERT INTO recipes (title, instructions, image_path, user_id) VALUES (?, ?, ?, ?)");
+    $stmt->bind_param("sssi", $_POST['title'], $_POST['instructions'], $image_path, $_SESSION['user_id']);
     $stmt->execute();
     $recipe_id = $conn->insert_id;
+
+    // Insert categories
+    if (isset($_POST['category_ids']) && is_array($_POST['category_ids'])) {
+        $insert_category = "INSERT INTO recipe_categories (recipe_id, category_id) VALUES (?, ?)";
+        $stmt = $conn->prepare($insert_category);
+        foreach ($_POST['category_ids'] as $category_id) {
+            $stmt->bind_param("ii", $recipe_id, $category_id);
+            $stmt->execute();
+        }
+    }
 
     // Insert ingredients
     if (isset($_POST['ingredients']) && is_array($_POST['ingredients'])) {

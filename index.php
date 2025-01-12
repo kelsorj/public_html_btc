@@ -23,13 +23,20 @@ require_once 'config/functions.php';
 $categories_query = "SELECT * FROM categories ORDER BY name";
 $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
 
-// Fetch all recipes
-$recipes_query = "SELECT r.*, c.name as category_name, 
-                 (SELECT COUNT(*) FROM ingredients WHERE recipe_id = r.id) as ingredient_count 
-                 FROM recipes r 
-                 LEFT JOIN categories c ON r.category_id = c.id 
-                 ORDER BY r.title ASC";
-$recipes = $conn->query($recipes_query)->fetch_all(MYSQLI_ASSOC);
+// Fetch recipes with their categories
+$query = "SELECT DISTINCT r.*, GROUP_CONCAT(c.name) as category_names 
+          FROM recipes r 
+          LEFT JOIN recipe_categories rc ON r.id = rc.recipe_id 
+          LEFT JOIN categories c ON rc.category_id = c.id 
+          WHERE r.user_id = " . $_SESSION['user_id'] . " 
+          GROUP BY r.id 
+          ORDER BY r.title ASC";
+
+$recipes = $conn->query($query);
+
+if (!$recipes) {
+    die("Error fetching recipes: " . $conn->error);
+}
 ?>
 
 <!DOCTYPE html>
@@ -86,18 +93,22 @@ $recipes = $conn->query($recipes_query)->fetch_all(MYSQLI_ASSOC);
                 <div class="no-recipes">No recipes found</div>
             <?php else: ?>
                 <?php foreach ($recipes as $recipe): ?>
-                    <div class="recipe-card" data-category="<?php echo htmlspecialchars($recipe['category_name']); ?>">
+                    <div class="recipe-card">
                         <a href="recipe.php?id=<?php echo $recipe['id']; ?>">
                             <?php if ($recipe['image_path']): ?>
-                                <div class="recipe-image">
-                                    <img src="<?php echo htmlspecialchars($recipe['image_path']); ?>" 
-                                         alt="<?php echo htmlspecialchars($recipe['title']); ?>">
-                                </div>
+                                <img src="<?php echo htmlspecialchars($recipe['image_path']); ?>" alt="<?php echo htmlspecialchars($recipe['title']); ?>">
+                            <?php else: ?>
+                                <div class="placeholder-image"></div>
                             <?php endif; ?>
-                            <div class="recipe-content">
-                                <h2><?php echo htmlspecialchars($recipe['title']); ?></h2>
-                                <p><?php echo htmlspecialchars($recipe['category_name']); ?></p>
-                                <p><?php echo $recipe['ingredient_count']; ?> ingredients</p>
+                            <div class="recipe-info">
+                                <h3><?php echo htmlspecialchars($recipe['title']); ?></h3>
+                                <div class="recipe-meta">
+                                    <?php if ($recipe['category_names']): ?>
+                                        <span class="categories">
+                                            <?php echo htmlspecialchars($recipe['category_names']); ?>
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         </a>
                     </div>
@@ -117,10 +128,11 @@ $recipes = $conn->query($recipes_query)->fetch_all(MYSQLI_ASSOC);
         const selectedCategory = categoryFilter.value.toLowerCase();
 
         recipeCards.forEach(card => {
-            const title = card.querySelector('h2').textContent.toLowerCase();
-            const category = card.dataset.category.toLowerCase();
+            const title = card.querySelector('h3').textContent.toLowerCase();
+            const categories = card.querySelector('.categories')?.textContent.toLowerCase() || '';
+            
             const matchesSearch = title.includes(searchTerm);
-            const matchesCategory = !selectedCategory || category === selectedCategory;
+            const matchesCategory = !selectedCategory || categories.includes(selectedCategory);
 
             card.style.display = matchesSearch && matchesCategory ? 'block' : 'none';
         });

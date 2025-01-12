@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 // Validate required fields
-if (!isset($_POST['recipe_id']) || !isset($_POST['title']) || !isset($_POST['category_id'])) {
+if (!isset($_POST['recipe_id']) || !isset($_POST['title'])) {
     http_response_code(400);
     echo json_encode(['error' => 'Missing required fields']);
     exit;
@@ -89,30 +89,10 @@ if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
 }
 
 // Add this before updating the recipe
-$category_id = $_POST['category_id'];
-
-// Handle new category creation
-if ($category_id === 'new' && !empty($_POST['new_category'])) {
-    $new_category = trim($_POST['new_category']);
-    
-    // Check if category already exists
-    $check_query = "SELECT id FROM categories WHERE name = ?";
-    $stmt = $conn->prepare($check_query);
-    $stmt->bind_param("s", $new_category);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    if ($result->num_rows > 0) {
-        // Category already exists, use its ID
-        $category_id = $result->fetch_assoc()['id'];
-    } else {
-        // Create new category
-        $insert_query = "INSERT INTO categories (name) VALUES (?)";
-        $stmt = $conn->prepare($insert_query);
-        $stmt->bind_param("s", $new_category);
-        $stmt->execute();
-        $category_id = $conn->insert_id;
-    }
+if (isset($_POST['category_ids']) && !is_array($_POST['category_ids'])) {
+    http_response_code(400);
+    echo json_encode(['error' => 'Category IDs must be an array']);
+    exit;
 }
 
 // Update recipe
@@ -122,18 +102,32 @@ try {
     // Update recipe details
     $update_query = "UPDATE recipes SET 
                     title = ?, 
-                    category_id = ?,
                     instructions = ?
                     " . ($image_path ? ", image_path = ?" : "") . "
                     WHERE id = ?";
     
     $stmt = $conn->prepare($update_query);
     if ($image_path) {
-        $stmt->bind_param("sissi", $_POST['title'], $category_id, $_POST['instructions'], $image_path, $recipe_id);
+        $stmt->bind_param("sssi", $_POST['title'], $_POST['instructions'], $image_path, $recipe_id);
     } else {
-        $stmt->bind_param("sisi", $_POST['title'], $category_id, $_POST['instructions'], $recipe_id);
+        $stmt->bind_param("ssi", $_POST['title'], $_POST['instructions'], $recipe_id);
     }
     $stmt->execute();
+
+    // Update categories
+    $delete_categories = "DELETE FROM recipe_categories WHERE recipe_id = ?";
+    $stmt = $conn->prepare($delete_categories);
+    $stmt->bind_param("i", $recipe_id);
+    $stmt->execute();
+
+    if (isset($_POST['category_ids']) && is_array($_POST['category_ids'])) {
+        $insert_category = "INSERT INTO recipe_categories (recipe_id, category_id) VALUES (?, ?)";
+        $stmt = $conn->prepare($insert_category);
+        foreach ($_POST['category_ids'] as $category_id) {
+            $stmt->bind_param("ii", $recipe_id, $category_id);
+            $stmt->execute();
+        }
+    }
 
     // Delete existing ingredients
     $delete_query = "DELETE FROM ingredients WHERE recipe_id = ?";

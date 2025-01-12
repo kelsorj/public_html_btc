@@ -54,21 +54,17 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
                 </div>
 
                 <div class="form-group">
-                    <label for="category">Category</label>
+                    <label for="category">Categories</label>
                     <div class="category-selection">
-                        <select id="category" name="category_id" required>
-                            <option value="">Select a category</option>
+                        <select id="category" name="category_ids[]" multiple required>
                             <?php foreach ($categories as $category): ?>
                                 <option value="<?php echo $category['id']; ?>">
                                     <?php echo htmlspecialchars($category['name']); ?>
                                 </option>
                             <?php endforeach; ?>
-                            <option value="new">+ Add New Category</option>
                         </select>
-                        <div id="new-category-input" style="display: none;">
-                            <input type="text" id="new-category-name" name="new_category" placeholder="Enter new category name">
-                            <button type="button" class="btn btn-secondary" onclick="cancelNewCategory()">Cancel</button>
-                        </div>
+                        <small>Hold Ctrl/Cmd to select multiple categories</small>
+                        <button type="button" class="btn btn-secondary" onclick="showNewCategoryModal()">+ Add New Category</button>
                     </div>
                 </div>
 

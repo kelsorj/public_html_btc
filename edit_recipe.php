@@ -81,22 +81,28 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
                 </div>
 
                 <div class="form-group">
-                    <label for="category">Category</label>
+                    <label for="category">Categories</label>
                     <div class="category-selection">
-                        <select id="category" name="category_id" required>
-                            <option value="">Select a category</option>
-                            <?php foreach ($categories as $category): ?>
+                        <select id="category" name="category_ids[]" multiple required>
+                            <?php 
+                            // Fetch current categories for this recipe
+                            $recipe_categories_query = "SELECT category_id FROM recipe_categories WHERE recipe_id = ?";
+                            $stmt = $conn->prepare($recipe_categories_query);
+                            $stmt->bind_param("i", $recipe_id);
+                            $stmt->execute();
+                            $recipe_categories = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+                            $selected_categories = array_column($recipe_categories, 'category_id');
+                            
+                            foreach ($categories as $category): 
+                            ?>
                                 <option value="<?php echo $category['id']; ?>" 
-                                    <?php echo ($category['id'] == $recipe['category_id']) ? 'selected' : ''; ?>>
+                                    <?php echo in_array($category['id'], $selected_categories) ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($category['name']); ?>
                                 </option>
                             <?php endforeach; ?>
-                            <option value="new">+ Add New Category</option>
                         </select>
-                        <div id="new-category-input" style="display: none;">
-                            <input type="text" id="new-category-name" name="new_category" placeholder="Enter new category name">
-                            <button type="button" class="btn btn-secondary" onclick="cancelNewCategory()">Cancel</button>
-                        </div>
+                        <small>Hold Ctrl/Cmd to select multiple categories</small>
+                        <button type="button" class="btn btn-secondary" onclick="showNewCategoryModal()">+ Add New Category</button>
                     </div>
                 </div>
 
@@ -587,6 +593,61 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
             });
         }
     });
+
+    function showNewCategoryModal() {
+        document.getElementById('newCategoryModal').style.display = 'block';
+        document.getElementById('newCategoryName').value = '';
+        document.getElementById('newCategoryName').focus();
+    }
+
+    function closeNewCategoryModal() {
+        document.getElementById('newCategoryModal').style.display = 'none';
+        document.getElementById('newCategoryName').value = '';
+    }
+
+    function saveNewCategory() {
+        const categoryName = document.getElementById('newCategoryName').value.trim();
+        if (!categoryName) {
+            alert('Please enter a category name');
+            return;
+        }
+
+        fetch('api/add_category.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                name: categoryName
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Add new option to select
+                const select = document.getElementById('category');
+                const option = document.createElement('option');
+                option.value = data.category_id;
+                option.textContent = categoryName;
+                select.appendChild(option);
+                
+                // Select the new option
+                const currentSelections = Array.from(select.selectedOptions).map(opt => opt.value);
+                currentSelections.push(data.category_id);
+                currentSelections.forEach(value => {
+                    select.querySelector(`option[value="${value}"]`).selected = true;
+                });
+                
+                closeNewCategoryModal();
+            } else {
+                alert('Error adding category: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error adding category');
+        });
+    }
     </script>
 
     <div id="noteModal" class="modal">
@@ -625,6 +686,21 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
             <div class="modal-buttons">
                 <button type="button" class="btn btn-secondary" onclick="document.getElementById('bulk-input-modal').style.display='none'">Cancel</button>
                 <button type="button" class="btn btn-primary" onclick="addBulkIngredients()">Add Ingredients</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Category Modal -->
+    <div id="newCategoryModal" class="modal">
+        <div class="modal-content">
+            <h3>Add New Category</h3>
+            <div class="form-group">
+                <label for="newCategoryName">Category Name</label>
+                <input type="text" id="newCategoryName" placeholder="Enter category name">
+            </div>
+            <div class="modal-buttons">
+                <button type="button" class="btn btn-secondary" onclick="closeNewCategoryModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveNewCategory()">Add Category</button>
             </div>
         </div>
     </div>
