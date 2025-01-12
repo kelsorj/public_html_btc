@@ -2,6 +2,7 @@
 ob_start(); // Start output buffering
 session_start();
 require_once '../config/database.php';
+require_once '../config/functions.php';
 
 // Enable error reporting for debugging
 error_reporting(E_ALL);
