@@ -363,12 +363,13 @@ nav {
 
 .ingredient-row {
     display: grid;
-    grid-template-columns: 3fr 1fr 1fr auto;
+    grid-template-columns: 15% 15% minmax(0, 1fr) auto;
     gap: 1rem;
     margin-bottom: 1rem;
 }
 
 .ingredient-row input {
+    width: 100%;
     padding: 0.5rem;
     border: 1px solid #ddd;
     border-radius: 4px;
