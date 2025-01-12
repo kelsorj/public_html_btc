@@ -85,9 +85,9 @@ try {
     if (isset($_POST['ingredients']) && is_array($_POST['ingredients'])) {
         $stmt = $conn->prepare("INSERT INTO ingredients (recipe_id, name, amount, unit, section) VALUES (?, ?, ?, ?, ?)");
         
-        foreach ($_POST['ingredients'] as $ingredient) {
+        foreach ($_POST['ingredients'] as $index => $ingredient) {
             // Skip if ingredient name is empty
-            if (empty($ingredient['name'])) {
+            if (!isset($ingredient['name']) || trim($ingredient['name']) === '') {
                 continue;
             }
             
@@ -97,17 +97,8 @@ try {
             $unit = isset($ingredient['unit']) ? trim($ingredient['unit']) : '';
             $section = isset($ingredient['section']) ? trim($ingredient['section']) : '';
             
-            // Debug log
-            error_log("Creating ingredient: " . json_encode([
-                'recipe_id' => $recipe_id,
-                'name' => $name,
-                'amount' => $amount,
-                'unit' => $unit,
-                'section' => $section
-            ]));
-            
             if (!$stmt->bind_param("issss", $recipe_id, $name, $amount, $unit, $section)) {
-                throw new Exception("Error binding parameters: " . $stmt->error);
+                throw new Exception("Error binding parameters for ingredient: " . $stmt->error);
             }
             
             if (!$stmt->execute()) {
@@ -115,7 +106,7 @@ try {
             }
         }
     } else {
-        throw new Exception("No ingredients provided or invalid format");
+        throw new Exception("Please add at least one ingredient to the recipe");
     }
 
     $conn->commit();
