@@ -63,7 +63,6 @@ $recipes = $conn->query($recipes_query)->fetch_all(MYSQLI_ASSOC);
                 </div>
             </div>
             <div class="nav-links">
-                <a href="index.php">Recipes</a>
                 <a href="introduction.php">Introduction</a>
                 <?php if (isset($_SESSION['user_id'])): ?>
                     <button class="btn btn-primary" onclick="location.href='add_recipe.php'">Add Recipe</button>
