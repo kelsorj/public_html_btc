@@ -19,7 +19,6 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <base href="/">
     <title>Add New Recipe - Burning to Cook</title>
     <link rel="stylesheet" href="css/style.css">
     <style>
@@ -194,9 +193,10 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
             const row = document.createElement('div');
             row.className = 'ingredient-row';
             row.innerHTML = `
-                <input type="text" name="ingredients[${encodeURIComponent(sectionName)}][${ingredientCount}][amount]" placeholder="Amount">
-                <input type="text" name="ingredients[${encodeURIComponent(sectionName)}][${ingredientCount}][unit]" placeholder="Unit">
-                <input type="text" name="ingredients[${encodeURIComponent(sectionName)}][${ingredientCount}][name]" placeholder="Ingredient" required>
+                <input type="text" name="ingredients[${ingredientCount}][amount]" placeholder="Amount">
+                <input type="text" name="ingredients[${ingredientCount}][unit]" placeholder="Unit">
+                <input type="text" name="ingredients[${ingredientCount}][name]" placeholder="Ingredient" required>
+                <input type="hidden" name="ingredients[${ingredientCount}][section]" value="${encodeURIComponent(sectionName)}">
                 <button type="button" class="btn btn-secondary" onclick="this.parentElement.remove()">Remove</button>
             `;
             container.appendChild(row);
@@ -222,7 +222,7 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
             }
             
             const lines = bulkText.split('\n').filter(line => line.trim());
-            const startIndex = container.children.length;
+            const startIndex = document.querySelectorAll('.ingredient-row').length;
             
             lines.forEach((line, index) => {
                 // Match pattern: amount unit ingredient OR amount ingredient OR just ingredient
@@ -234,9 +234,10 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
                 const row = document.createElement('div');
                 row.className = 'ingredient-row';
                 row.innerHTML = `
-                    <input type="text" name="ingredients[${encodeURIComponent(section)}][${startIndex + index}][amount]" value="${amount.trim()}" placeholder="Amount">
-                    <input type="text" name="ingredients[${encodeURIComponent(section)}][${startIndex + index}][unit]" value="${unit.trim()}" placeholder="Unit">
-                    <input type="text" name="ingredients[${encodeURIComponent(section)}][${startIndex + index}][name]" value="${name.trim()}" placeholder="Ingredient" required>
+                    <input type="text" name="ingredients[${startIndex + index}][amount]" value="${amount.trim()}" placeholder="Amount">
+                    <input type="text" name="ingredients[${startIndex + index}][unit]" value="${unit.trim()}" placeholder="Unit">
+                    <input type="text" name="ingredients[${startIndex + index}][name]" value="${name.trim()}" placeholder="Ingredient" required>
+                    <input type="hidden" name="ingredients[${startIndex + index}][section]" value="${encodeURIComponent(section)}">
                     <button type="button" class="btn btn-secondary" onclick="this.parentElement.remove()">Remove</button>
                 `;
                 container.appendChild(row);

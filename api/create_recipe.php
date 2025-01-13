@@ -3,26 +3,18 @@ session_start();
 require_once '../config/database.php';
 require_once '../config/functions.php';
 
+error_log("Starting create_recipe.php");
+
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
-        header('Content-Type: application/json');
-        http_response_code(401);
-        echo json_encode(['error' => 'Unauthorized']);
-    } else {
-        header('Location: ../login.php');
-    }
+    error_log("User not logged in");
+    header('Location: ../login.php');
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
-        header('Content-Type: application/json');
-        http_response_code(405);
-        echo json_encode(['error' => 'Method not allowed']);
-    } else {
-        header('Location: ../add_recipe.php');
-    }
+    error_log("Not a POST request: " . $_SERVER['REQUEST_METHOD']);
+    header('Location: ../add_recipe.php');
     exit;
 }
 
@@ -34,9 +26,12 @@ error_log("FILES data received: " . print_r($_FILES, true));
 $conn->begin_transaction();
 
 try {
+    error_log("Starting recipe creation");
+    
     // Handle new category if provided
-    $category_id = $_POST['category_id'];
+    $category_id = isset($_POST['category_id']) ? $_POST['category_id'] : null;
     if ($category_id === 'new' && !empty($_POST['new_category'])) {
+        error_log("Creating new category: " . $_POST['new_category']);
         $stmt = $conn->prepare("INSERT INTO categories (name) VALUES (?)");
         $stmt->bind_param("s", $_POST['new_category']);
         $stmt->execute();
@@ -46,6 +41,7 @@ try {
     // Handle image upload
     $image_path = null;
     if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+        error_log("Processing image upload");
         $file = $_FILES['image'];
         $file_extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         
@@ -77,14 +73,17 @@ try {
         }
     }
 
+    error_log("Inserting recipe");
     // Insert recipe
     $stmt = $conn->prepare("INSERT INTO recipes (title, instructions, image_path, user_id) VALUES (?, ?, ?, ?)");
     $stmt->bind_param("sssi", $_POST['title'], $_POST['instructions'], $image_path, $_SESSION['user_id']);
     $stmt->execute();
     $recipe_id = $conn->insert_id;
+    error_log("Recipe created with ID: " . $recipe_id);
 
     // Insert categories
     if (isset($_POST['category_ids']) && is_array($_POST['category_ids'])) {
+        error_log("Inserting categories: " . print_r($_POST['category_ids'], true));
         $insert_category = "INSERT INTO recipe_categories (recipe_id, category_id) VALUES (?, ?)";
         $stmt = $conn->prepare($insert_category);
         foreach ($_POST['category_ids'] as $category_id) {
@@ -95,12 +94,14 @@ try {
 
     // Insert ingredients
     if (isset($_POST['ingredients']) && is_array($_POST['ingredients'])) {
+        error_log("Processing ingredients");
         $stmt = $conn->prepare("INSERT INTO ingredients (recipe_id, name, amount, unit, section) VALUES (?, ?, ?, ?, ?)");
         
         // Ensure we have at least one valid ingredient
         $has_ingredients = false;
         
         foreach ($_POST['ingredients'] as $index => $ingredient) {
+            error_log("Processing ingredient: " . print_r($ingredient, true));
             // Skip if ingredient name is empty or not set
             if (!isset($ingredient['name']) || trim($ingredient['name']) === '') {
                 continue;
@@ -127,30 +128,21 @@ try {
             throw new Exception("Please add at least one ingredient with a name to the recipe");
         }
     } else {
+        error_log("No ingredients found in POST data");
         throw new Exception("Please add at least one ingredient to the recipe");
     }
 
     $conn->commit();
+    error_log("Recipe creation successful, redirecting to index.php");
     
     $_SESSION['success_message'] = 'Recipe created successfully';
-    if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
-        header('Content-Type: application/json');
-        echo json_encode(['success' => true, 'redirect' => '../index.php']);
-    } else {
-        header('Location: ../index.php');
-    }
+    header('Location: ../index.php');
     exit;
 
 } catch (Exception $e) {
     $conn->rollback();
     error_log("Error creating recipe: " . $e->getMessage());
     $_SESSION['error_message'] = 'Error creating recipe: ' . $e->getMessage();
-    if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
-        header('Content-Type: application/json');
-        http_response_code(400);
-        echo json_encode(['error' => $e->getMessage()]);
-    } else {
-        header('Location: ../add_recipe.php');
-    }
+    header('Location: ../add_recipe.php');
     exit;
 } 
