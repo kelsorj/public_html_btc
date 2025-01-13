@@ -911,4 +911,45 @@ textarea {
             margin-bottom: 20px;
         }
     }
-} 
+}
+
+@media only screen and (max-width: 430px) {
+    .desktop-only {
+        display: none !important;
+    }
+
+    header {
+        padding: 8px !important;
+    }
+
+    nav {
+        flex-direction: column !important;
+        gap: 8px !important;
+        padding: 0 !important;
+    }
+
+    .search-bar {
+        display: flex !important;
+        width: 100% !important;
+        gap: 8px !important;
+    }
+
+    .search-input {
+        width: 60% !important;
+    }
+
+    .category-filter {
+        width: 40% !important;
+    }
+
+    .recipe-grid {
+        grid-template-columns: 1fr !important;
+        padding: 1rem !important;
+        gap: 1rem !important;
+    }
+
+    .nav-links {
+        justify-content: flex-end !important;
+        gap: 8px !important;
+    }
+}

@@ -28,6 +28,10 @@ $conn->begin_transaction();
 try {
     error_log("Starting recipe creation");
     
+    // Handle categories
+    $category_ids = isset($_POST['category_ids']) ? $_POST['category_ids'] : [];
+    error_log("Categories received: " . print_r($category_ids, true));
+
     // Handle new category if provided
     $category_id = isset($_POST['category_id']) ? $_POST['category_id'] : null;
     if ($category_id === 'new' && !empty($_POST['new_category'])) {
@@ -82,11 +86,11 @@ try {
     error_log("Recipe created with ID: " . $recipe_id);
 
     // Insert categories
-    if (isset($_POST['category_ids']) && is_array($_POST['category_ids'])) {
-        error_log("Inserting categories: " . print_r($_POST['category_ids'], true));
+    if (!empty($category_ids)) {
+        error_log("Inserting categories: " . print_r($category_ids, true));
         $insert_category = "INSERT INTO recipe_categories (recipe_id, category_id) VALUES (?, ?)";
         $stmt = $conn->prepare($insert_category);
-        foreach ($_POST['category_ids'] as $category_id) {
+        foreach ($category_ids as $category_id) {
             $stmt->bind_param("ii", $recipe_id, $category_id);
             $stmt->execute();
         }

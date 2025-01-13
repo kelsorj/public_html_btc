@@ -58,13 +58,12 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
                     <div class="category-selection">
                         <select id="category" name="category_ids[]" multiple required>
                             <?php foreach ($categories as $category): ?>
-                                <option value="<?php echo $category['id']; ?>">
+                                <option value="<?php echo htmlspecialchars($category['id']); ?>">
                                     <?php echo htmlspecialchars($category['name']); ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
                         <small>Hold Ctrl/Cmd to select multiple categories</small>
-                        <button type="button" class="btn btn-secondary" onclick="showNewCategoryModal()">+ Add New Category</button>
                     </div>
                 </div>
 
@@ -266,4 +265,4 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
         }
     </script>
 </body>
-</html> 
+</html>
