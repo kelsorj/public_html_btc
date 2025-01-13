@@ -1,4 +1,6 @@
 <?php
+ob_end_clean(); // Clean any existing output buffers
+ob_start(); // Start fresh output buffer
 session_start();
 require_once '../config/database.php';
 require_once '../config/functions.php';
@@ -140,13 +142,16 @@ try {
     error_log("Recipe creation successful, redirecting to index.php");
     
     $_SESSION['success_message'] = 'Recipe created successfully';
-    header('Location: ../index.php');
-    exit;
+    ob_end_clean(); // Clean any output before redirect
+    header("Location: ../index.php");
+    exit();
 
 } catch (Exception $e) {
     $conn->rollback();
     error_log("Error creating recipe: " . $e->getMessage());
     $_SESSION['error_message'] = 'Error creating recipe: ' . $e->getMessage();
-    header('Location: ../add_recipe.php');
-    exit;
-} 
+    ob_end_clean(); // Clean any output before redirect
+    header("Location: ../add_recipe.php");
+    exit();
+}
+?>
