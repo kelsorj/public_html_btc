@@ -825,4 +825,90 @@ textarea {
     display: block;
     color: #666;
     margin-bottom: 0.5rem;
+}
+
+/* iOS-specific styles */
+@supports (-webkit-touch-callout: none) {
+    /* CSS specific to iOS devices */
+    .recipe-form {
+        /* Adjust form padding for better touch targets */
+        padding: 20px 15px;
+    }
+
+    .ingredient-row {
+        /* More space between ingredient inputs */
+        margin-bottom: 15px;
+        /* Stack inputs vertically on iOS */
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .ingredient-row input {
+        /* Larger touch targets */
+        height: 44px;
+        font-size: 16px; /* Prevents iOS zoom on focus */
+        width: 100%;
+    }
+
+    /* Larger buttons for better touch targets */
+    .btn {
+        min-height: 44px;
+        padding: 12px 20px;
+        font-size: 16px;
+    }
+
+    /* Adjust select boxes */
+    select {
+        height: 44px;
+        font-size: 16px;
+    }
+
+    /* Adjust text inputs */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    textarea {
+        font-size: 16px; /* Prevents iOS zoom on focus */
+        padding: 12px;
+    }
+
+    /* Modal adjustments */
+    .modal-content {
+        padding: 20px;
+        width: 90%;
+        max-width: none;
+        margin: 20px auto;
+    }
+
+    /* Navigation adjustments */
+    .nav-links {
+        gap: 15px;
+    }
+
+    /* Recipe card adjustments */
+    .recipe-card {
+        margin: 15px 0;
+    }
+}
+
+/* Additional iPhone-specific adjustments using User Agent */
+@media screen and (max-width: 428px) {
+    /* iPhone-specific landscape mode */
+    @media (orientation: landscape) {
+        .recipe-form {
+            max-width: 100%;
+            margin: 10px;
+        }
+    }
+
+    /* iPhone-specific portrait mode */
+    @media (orientation: portrait) {
+        .recipe-form {
+            margin: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+    }
 } 
