@@ -832,7 +832,7 @@ textarea {
     /* CSS specific to iOS devices */
     .recipe-form {
         /* Adjust form padding for better touch targets */
-        padding: 20px 15px;
+        padding: 20px 16px;
     }
 
     .ingredient-row {
