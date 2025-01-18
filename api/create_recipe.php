@@ -82,10 +82,62 @@ try {
     error_log("Inserting recipe");
     // Insert recipe
     $stmt = $conn->prepare("INSERT INTO recipes (title, instructions, image_path, user_id) VALUES (?, ?, ?, ?)");
-    $stmt->bind_param("sssi", $_POST['title'], $_POST['instructions'], $image_path, $_SESSION['user_id']);
+    
+    // Combine instructions into a single string with step numbers
+    $instructions_array = isset($_POST['instructions']) ? $_POST['instructions'] : [];
+    $formatted_instructions = '';
+    foreach ($instructions_array as $index => $step) {
+        $step_number = $index + 1;
+        $formatted_instructions .= "Step {$step_number}: " . trim($step) . "\n\n";
+    }
+    
+    $stmt->bind_param("sssi", $_POST['title'], $formatted_instructions, $image_path, $_SESSION['user_id']);
     $stmt->execute();
     $recipe_id = $conn->insert_id;
     error_log("Recipe created with ID: " . $recipe_id);
+
+    // Handle instruction images
+    if (isset($_FILES['instruction_images'])) {
+        error_log("Processing instruction images");
+        $instruction_images = $_FILES['instruction_images'];
+        
+        // Prepare statement for instruction images
+        $stmt = $conn->prepare("INSERT INTO instruction_images (recipe_id, image_path, step_number) VALUES (?, ?, ?)");
+        
+        foreach ($instruction_images['tmp_name'] as $index => $tmp_name) {
+            if ($instruction_images['error'][$index] === UPLOAD_ERR_OK) {
+                $file = [
+                    'name' => $instruction_images['name'][$index],
+                    'type' => $instruction_images['type'][$index],
+                    'tmp_name' => $tmp_name,
+                    'error' => $instruction_images['error'][$index],
+                    'size' => $instruction_images['size'][$index]
+                ];
+                
+                $file_extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                
+                // Validate file type
+                if (!in_array($file_extension, ['jpg', 'jpeg', 'png', 'webp']) || 
+                    !in_array(mime_content_type($tmp_name), ['image/jpeg', 'image/png', 'image/webp'])) {
+                    continue; // Skip invalid files
+                }
+                
+                // Generate unique filename for instruction image
+                $content_hash = hash('sha256', file_get_contents($tmp_name) . time() . $index);
+                $new_filename = "instruction_{$content_hash}.jpg";
+                $upload_path = '../uploads/' . $new_filename;
+                
+                // Optimize and save image
+                if (optimizeImage($tmp_name, $upload_path)) {
+                    $image_path = 'uploads/' . $new_filename;
+                    $step_number = $index + 1;
+                    $stmt->bind_param("isi", $recipe_id, $image_path, $step_number);
+                    $stmt->execute();
+                    error_log("Saved instruction image for step {$step_number}: {$image_path}");
+                }
+            }
+        }
+    }
 
     // Insert categories
     if (!empty($category_ids)) {

@@ -130,8 +130,120 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
 
                 <div class="form-group">
                     <label for="instructions">Instructions</label>
-                    <textarea id="instructions" name="instructions" rows="10" required><?php echo htmlspecialchars($recipe['instructions']); ?></textarea>
+                    <div class="instructions-container">
+                        <div class="instruction-steps">
+                            <?php
+                            // Split instructions into steps
+                            $steps = explode("\n\n", trim($recipe['instructions']));
+                            
+                            // Fetch existing instruction images
+                            $images_query = "SELECT * FROM instruction_images WHERE recipe_id = ? ORDER BY step_number";
+                            $stmt = $conn->prepare($images_query);
+                            $stmt->bind_param("i", $recipe_id);
+                            $stmt->execute();
+                            $instruction_images = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+                            
+                            // Create lookup array for images
+                            $step_images = [];
+                            foreach ($instruction_images as $img) {
+                                $step_images[$img['step_number']] = $img['image_path'];
+                            }
+                            
+                            foreach ($steps as $index => $step) {
+                                if (empty(trim($step))) continue;
+                                $step_number = $index + 1;
+                                $step_text = preg_replace('/^Step \d+:\s*/', '', trim($step));
+                                ?>
+                                <div class="instruction-step">
+                                    <textarea name="instructions[]" rows="3" required placeholder="Enter instruction step..."><?php echo htmlspecialchars($step_text); ?></textarea>
+                                    <?php if (isset($step_images[$step_number])): ?>
+                                        <div class="current-step-image">
+                                            <img src="<?php echo htmlspecialchars($step_images[$step_number]); ?>" alt="Current step image">
+                                            <input type="hidden" name="existing_instruction_images[]" value="<?php echo htmlspecialchars($step_images[$step_number]); ?>">
+                                            <label>
+                                                <input type="checkbox" name="remove_instruction_images[]" value="<?php echo $step_number; ?>">
+                                                Remove this image
+                                            </label>
+                                        </div>
+                                    <?php endif; ?>
+                                    <input type="file" name="instruction_images[]" accept="image/jpeg, image/png, image/webp" class="instruction-image">
+                                    <small>Optional: <?php echo isset($step_images[$step_number]) ? 'Replace' : 'Add'; ?> image for this step</small>
+                                    <?php if ($index > 0): ?>
+                                        <button type="button" class="btn btn-secondary btn-sm" onclick="this.parentElement.remove()">Remove Step</button>
+                                    <?php endif; ?>
+                                </div>
+                            <?php } ?>
+                        </div>
+                        <button type="button" class="btn btn-secondary" onclick="addInstructionStep()">Add Another Step</button>
+                    </div>
                 </div>
+
+                <style>
+                .instruction-steps {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1rem;
+                    margin-bottom: 1rem;
+                }
+
+                .instruction-step {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.5rem;
+                    padding: 1rem;
+                    background: #f8f9fa;
+                    border-radius: 8px;
+                }
+
+                .instruction-step textarea {
+                    width: 100%;
+                    padding: 0.5rem;
+                    border: 1px solid #ddd;
+                    border-radius: 4px;
+                }
+
+                .instruction-step small {
+                    color: #666;
+                }
+
+                .instructions-container {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1rem;
+                }
+
+                .current-step-image {
+                    margin: 0.5rem 0;
+                }
+
+                .current-step-image img {
+                    max-width: 200px;
+                    border-radius: 4px;
+                    margin-bottom: 0.5rem;
+                }
+
+                .current-step-image label {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    color: #dc3545;
+                }
+                </style>
+
+                <script>
+                function addInstructionStep() {
+                    const container = document.querySelector('.instruction-steps');
+                    const newStep = document.createElement('div');
+                    newStep.className = 'instruction-step';
+                    newStep.innerHTML = `
+                        <textarea name="instructions[]" rows="3" required placeholder="Enter instruction step..."></textarea>
+                        <input type="file" name="instruction_images[]" accept="image/jpeg, image/png, image/webp" class="instruction-image">
+                        <small>Optional: Add an image for this step</small>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="this.parentElement.remove()">Remove Step</button>
+                    `;
+                    container.appendChild(newStep);
+                }
+                </script>
 
                 <div class="form-group">
                     <label>Ingredients</label>

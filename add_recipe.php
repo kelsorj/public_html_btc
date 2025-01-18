@@ -25,6 +25,39 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
         body {
             background-image: url('<?php echo getRandomBackground(); ?>');
         }
+
+        .instruction-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .instruction-step {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .instruction-step textarea {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .instruction-step small {
+            color: #666;
+        }
+
+        .instructions-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -75,7 +108,16 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
 
                 <div class="form-group">
                     <label for="instructions">Instructions</label>
-                    <textarea id="instructions" name="instructions" rows="10" required></textarea>
+                    <div class="instructions-container">
+                        <div class="instruction-steps">
+                            <div class="instruction-step">
+                                <textarea name="instructions[]" rows="3" required placeholder="Enter instruction step..."></textarea>
+                                <input type="file" name="instruction_images[]" accept="image/jpeg, image/png, image/webp" class="instruction-image">
+                                <small>Optional: Add an image for this step</small>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-secondary" onclick="addInstructionStep()">Add Another Step</button>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -263,6 +305,27 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
             newCategoryInput.style.display = 'none';
             document.getElementById('new-category-name').value = '';
         }
+
+        function addInstructionStep() {
+            const container = document.querySelector('.instruction-steps');
+            const newStep = document.createElement('div');
+            newStep.className = 'instruction-step';
+            newStep.innerHTML = `
+                <textarea name="instructions[]" rows="3" required placeholder="Enter instruction step..."></textarea>
+                <input type="file" name="instruction_images[]" accept="image/jpeg, image/png, image/webp" class="instruction-image">
+                <small>Optional: Add an image for this step</small>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="this.parentElement.remove()">Remove Step</button>
+            `;
+            container.appendChild(newStep);
+        }
+
+        // Add first step on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Only add if there are no existing steps
+            if (document.querySelectorAll('.instruction-step').length === 0) {
+                addInstructionStep();
+            }
+        });
     </script>
 </body>
 </html>

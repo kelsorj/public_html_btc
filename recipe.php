@@ -130,8 +130,96 @@ foreach ($ingredients as $ingredient) {
 
             <div class="instructions-section">
                 <h2>Instructions</h2>
-                <div class="instructions"><?php echo nl2br(htmlspecialchars($recipe['instructions'])); ?></div>
+                <?php
+                // Fetch instruction images
+                $images_query = "SELECT * FROM instruction_images WHERE recipe_id = ? ORDER BY step_number";
+                $stmt = $conn->prepare($images_query);
+                $stmt->bind_param("i", $recipe['id']);
+                $stmt->execute();
+                $instruction_images = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+                
+                // Create a lookup array for images by step number
+                $step_images = [];
+                foreach ($instruction_images as $img) {
+                    $step_images[$img['step_number']] = $img['image_path'];
+                }
+                
+                // Split instructions into steps and display them
+                $steps = explode("\n\n", trim($recipe['instructions']));
+                echo '<div class="instruction-steps">';
+                foreach ($steps as $index => $step) {
+                    if (empty(trim($step))) continue;
+                    
+                    echo '<div class="instruction-step">';
+                    echo '<div class="step-content">';
+                    echo '<p class="step-number">Step ' . ($index + 1) . '</p>';
+                    echo '<p class="step-text">' . htmlspecialchars(preg_replace('/^Step \d+:\s*/', '', $step)) . '</p>';
+                    echo '</div>';
+                    
+                    // Display instruction image if exists
+                    if (isset($step_images[$index + 1])) {
+                        echo '<div class="step-image">';
+                        echo '<img src="' . htmlspecialchars($step_images[$index + 1]) . '" alt="Step ' . ($index + 1) . ' illustration">';
+                        echo '</div>';
+                    }
+                    echo '</div>';
+                }
+                echo '</div>';
+                ?>
             </div>
+
+            <style>
+            .instruction-steps {
+                display: flex;
+                flex-direction: column;
+                gap: 2rem;
+            }
+
+            .instruction-step {
+                display: flex;
+                gap: 2rem;
+                align-items: flex-start;
+                padding: 1.5rem;
+                background: #f8f9fa;
+                border-radius: 8px;
+            }
+
+            .step-content {
+                flex: 1;
+            }
+
+            .step-number {
+                font-weight: bold;
+                color: var(--primary-color);
+                margin-bottom: 0.5rem;
+            }
+
+            .step-text {
+                line-height: 1.6;
+                margin: 0;
+            }
+
+            .step-image {
+                flex: 0 0 300px;
+            }
+
+            .step-image img {
+                width: 100%;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+
+            @media (max-width: 768px) {
+                .instruction-step {
+                    flex-direction: column;
+                }
+
+                .step-image {
+                    flex: 0 0 auto;
+                    width: 100%;
+                }
+            }
+            </style>
 
             <div class="notes-section">
                 <h2>Recipe Notes</h2>

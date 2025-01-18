@@ -99,19 +99,95 @@ $conn->begin_transaction();
 
 try {
     // Update recipe details
-    $update_query = "UPDATE recipes SET 
-                    title = ?, 
-                    instructions = ?
-                    " . ($image_path ? ", image_path = ?" : "") . "
-                    WHERE id = ?";
+    $stmt = $conn->prepare("UPDATE recipes SET title = ?, instructions = ?, image_path = ? WHERE id = ? AND user_id = ?");
     
-    $stmt = $conn->prepare($update_query);
-    if ($image_path) {
-        $stmt->bind_param("sssi", $_POST['title'], $_POST['instructions'], $image_path, $recipe_id);
-    } else {
-        $stmt->bind_param("ssi", $_POST['title'], $_POST['instructions'], $recipe_id);
+    // Combine instructions into a single string with step numbers
+    $instructions_array = isset($_POST['instructions']) ? $_POST['instructions'] : [];
+    $formatted_instructions = '';
+    foreach ($instructions_array as $index => $step) {
+        $step_number = $index + 1;
+        $formatted_instructions .= "Step {$step_number}: " . trim($step) . "\n\n";
     }
+    
+    $stmt->bind_param("sssis", $_POST['title'], $formatted_instructions, $image_path, $recipe_id, $_SESSION['user_id']);
     $stmt->execute();
+
+    // Handle instruction images
+    if (isset($_FILES['instruction_images'])) {
+        error_log("Processing instruction images");
+        $instruction_images = $_FILES['instruction_images'];
+        
+        // Handle image removals first
+        if (isset($_POST['remove_instruction_images'])) {
+            foreach ($_POST['remove_instruction_images'] as $step_number) {
+                // Delete the image file
+                $stmt = $conn->prepare("SELECT image_path FROM instruction_images WHERE recipe_id = ? AND step_number = ?");
+                $stmt->bind_param("ii", $recipe_id, $step_number);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                if ($row = $result->fetch_assoc()) {
+                    $file_path = '../' . $row['image_path'];
+                    if (file_exists($file_path)) {
+                        unlink($file_path);
+                    }
+                }
+                
+                // Delete the database record
+                $stmt = $conn->prepare("DELETE FROM instruction_images WHERE recipe_id = ? AND step_number = ?");
+                $stmt->bind_param("ii", $recipe_id, $step_number);
+                $stmt->execute();
+            }
+        }
+        
+        // Handle new/updated images
+        $stmt = $conn->prepare("INSERT INTO instruction_images (recipe_id, image_path, step_number) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE image_path = VALUES(image_path)");
+        
+        foreach ($instruction_images['tmp_name'] as $index => $tmp_name) {
+            if ($instruction_images['error'][$index] === UPLOAD_ERR_OK) {
+                $file = [
+                    'name' => $instruction_images['name'][$index],
+                    'type' => $instruction_images['type'][$index],
+                    'tmp_name' => $tmp_name,
+                    'error' => $instruction_images['error'][$index],
+                    'size' => $instruction_images['size'][$index]
+                ];
+                
+                $file_extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                
+                // Validate file type
+                if (!in_array($file_extension, ['jpg', 'jpeg', 'png', 'webp']) || 
+                    !in_array(mime_content_type($tmp_name), ['image/jpeg', 'image/png', 'image/webp'])) {
+                    continue; // Skip invalid files
+                }
+                
+                // Generate unique filename for instruction image
+                $content_hash = hash('sha256', file_get_contents($tmp_name) . time() . $index);
+                $new_filename = "instruction_{$content_hash}.jpg";
+                $upload_path = '../uploads/' . $new_filename;
+                
+                // Optimize and save image
+                if (optimizeImage($tmp_name, $upload_path)) {
+                    // Delete old image if it exists
+                    $stmt_old = $conn->prepare("SELECT image_path FROM instruction_images WHERE recipe_id = ? AND step_number = ?");
+                    $step_number = $index + 1;
+                    $stmt_old->bind_param("ii", $recipe_id, $step_number);
+                    $stmt_old->execute();
+                    $result = $stmt_old->get_result();
+                    if ($row = $result->fetch_assoc()) {
+                        $old_path = '../' . $row['image_path'];
+                        if (file_exists($old_path)) {
+                            unlink($old_path);
+                        }
+                    }
+                    
+                    $image_path = 'uploads/' . $new_filename;
+                    $stmt->bind_param("isi", $recipe_id, $image_path, $step_number);
+                    $stmt->execute();
+                    error_log("Saved instruction image for step {$step_number}: {$image_path}");
+                }
+            }
+        }
+    }
 
     // Update categories
     $delete_categories = "DELETE FROM recipe_categories WHERE recipe_id = ?";
