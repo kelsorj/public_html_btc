@@ -119,7 +119,15 @@ try {
         $formatted_instructions .= $formatted_step . "\n\n";
     }
     
-    $stmt->bind_param("sssis", $_POST['title'], $formatted_instructions, $image_path, $recipe_id, $_SESSION['user_id']);
+    if ($image_path) {
+        // If new image uploaded, update everything including image_path
+        $stmt = $conn->prepare("UPDATE recipes SET title = ?, instructions = ?, image_path = ? WHERE id = ? AND user_id = ?");
+        $stmt->bind_param("sssis", $_POST['title'], $formatted_instructions, $image_path, $recipe_id, $_SESSION['user_id']);
+    } else {
+        // If no new image, keep existing image_path
+        $stmt = $conn->prepare("UPDATE recipes SET title = ?, instructions = ? WHERE id = ? AND user_id = ?");
+        $stmt->bind_param("ssii", $_POST['title'], $formatted_instructions, $recipe_id, $_SESSION['user_id']);
+    }
     $stmt->execute();
 
     // Handle instruction images
