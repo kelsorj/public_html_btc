@@ -105,14 +105,18 @@ try {
     $instructions_array = isset($_POST['instructions']) ? $_POST['instructions'] : [];
     $formatted_instructions = '';
     foreach ($instructions_array as $index => $step) {
-        $step_number = $index + 1;
         // Replace single newlines with <br> and preserve paragraph breaks
         $formatted_step = trim($step);
         $formatted_step = str_replace("\r\n", "\n", $formatted_step); // Normalize line endings
         $formatted_step = str_replace("\n\n", "<paragraph>", $formatted_step); // Preserve paragraphs
         $formatted_step = str_replace("\n", "<br>", $formatted_step); // Convert single line breaks
         $formatted_step = str_replace("<paragraph>", "\n\n", $formatted_step); // Restore paragraphs
-        $formatted_instructions .= "Step {$step_number}: " . $formatted_step . "\n\n";
+        
+        // Only add step numbers for multi-step recipes
+        if (count($instructions_array) > 1) {
+            $formatted_step = "Step " . ($index + 1) . ": " . $formatted_step;
+        }
+        $formatted_instructions .= $formatted_step . "\n\n";
     }
     
     $stmt->bind_param("sssis", $_POST['title'], $formatted_instructions, $image_path, $recipe_id, $_SESSION['user_id']);

@@ -152,9 +152,14 @@ foreach ($ingredients as $ingredient) {
                     
                     echo '<div class="instruction-step">';
                     echo '<div class="step-content">';
-                    echo '<p class="step-number">Step ' . ($index + 1) . '</p>';
+                    
+                    // Only show step numbers for multi-step recipes
+                    if (count($steps) > 1) {
+                        echo '<p class="step-number">Step ' . ($index + 1) . '</p>';
+                    }
+                    
                     // Convert <br> back to newlines and apply nl2br for display
-                    $step_text = preg_replace('/^Step \d+:\s*/', '', trim($step));
+                    $step_text = preg_replace('/^(Step \d+|Instructions):\s*/', '', trim($step));
                     $step_text = str_replace("<br>", "\n", $step_text);
                     echo '<p class="step-text">' . nl2br(htmlspecialchars($step_text)) . '</p>';
                     echo '</div>';
