@@ -101,12 +101,18 @@ try {
     // Update recipe details
     $stmt = $conn->prepare("UPDATE recipes SET title = ?, instructions = ?, image_path = ? WHERE id = ? AND user_id = ?");
     
-    // Combine instructions into a single string with step numbers
+    // Combine instructions into a single string with step numbers, preserving line breaks
     $instructions_array = isset($_POST['instructions']) ? $_POST['instructions'] : [];
     $formatted_instructions = '';
     foreach ($instructions_array as $index => $step) {
         $step_number = $index + 1;
-        $formatted_instructions .= "Step {$step_number}: " . trim($step) . "\n\n";
+        // Replace single newlines with <br> and preserve paragraph breaks
+        $formatted_step = trim($step);
+        $formatted_step = str_replace("\r\n", "\n", $formatted_step); // Normalize line endings
+        $formatted_step = str_replace("\n\n", "<paragraph>", $formatted_step); // Preserve paragraphs
+        $formatted_step = str_replace("\n", "<br>", $formatted_step); // Convert single line breaks
+        $formatted_step = str_replace("<paragraph>", "\n\n", $formatted_step); // Restore paragraphs
+        $formatted_instructions .= "Step {$step_number}: " . $formatted_step . "\n\n";
     }
     
     $stmt->bind_param("sssis", $_POST['title'], $formatted_instructions, $image_path, $recipe_id, $_SESSION['user_id']);
