@@ -71,7 +71,14 @@ if (!$recipes) {
                 </div>
             </div>
             <div class="nav-links">
-                <a href="introduction.php">Introduction</a>
+                <?php 
+                // Get the current page name
+                $current_page = basename($_SERVER['PHP_SELF']);
+                // Only show Introduction link if we're not on the introduction page
+                if ($current_page !== 'introduction.php'): 
+                ?>
+                    <a href="introduction.php">Introduction</a>
+                <?php endif; ?>
                 <?php if (isset($_SESSION['user_id'])): ?>
                     <button class="btn btn-primary" onclick="location.href='add_recipe.php'">Add Recipe</button>
                     <button class="btn btn-secondary" onclick="location.href='logout.php'">Logout</button>

@@ -29,12 +29,9 @@ $timeline_entries = $conn->query($timeline_query)->fetch_all(MYSQLI_ASSOC);
                 <a href="index.php">Burning to Cook</a>
             </div>
             <div class="nav-links">
-                <a href="recipes.php">Recipes</a>
-                <a href="introduction.php">Introduction</a>
+                <a href="index.php">Recipes</a>
                 <?php if (isset($_SESSION['user_id'])): ?>
-                    <?php if ($_SESSION['user_id'] == 1): // Assuming admin is user_id 1 ?>
-                        <button class="btn btn-primary" onclick="location.href='edit_introduction.php'">Edit Introduction</button>
-                    <?php endif; ?>
+                    <button class="btn btn-primary" onclick="location.href='add_recipe.php'">Add Recipe</button>
                     <button class="btn btn-secondary" onclick="location.href='logout.php'">Logout</button>
                 <?php else: ?>
                     <button class="btn btn-primary" onclick="location.href='login.php'">Login</button>
