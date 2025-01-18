@@ -133,8 +133,8 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
                     <div class="instructions-container">
                         <div class="instruction-steps">
                             <?php
-                            // Split instructions into steps
-                            $steps = explode("\n\n", trim($recipe['instructions']));
+                            // Get the instructions text
+                            $instructions_text = trim($recipe['instructions']);
                             
                             // Fetch existing instruction images
                             $images_query = "SELECT * FROM instruction_images WHERE recipe_id = ? ORDER BY step_number";
@@ -148,35 +148,92 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
                             foreach ($instruction_images as $img) {
                                 $step_images[$img['step_number']] = $img['image_path'];
                             }
-                            
-                            foreach ($steps as $index => $step) {
-                                if (empty(trim($step))) continue;
-                                $step_number = $index + 1;
-                                $step_text = preg_replace('/^Step \d+:\s*/', '', trim($step));
-                                ?>
-                                <div class="instruction-step">
-                                    <textarea name="instructions[]" rows="3" required placeholder="Enter instruction step..."><?php echo htmlspecialchars($step_text); ?></textarea>
-                                    <?php if (isset($step_images[$step_number])): ?>
-                                        <div class="current-step-image">
-                                            <img src="<?php echo htmlspecialchars($step_images[$step_number]); ?>" alt="Current step image">
-                                            <input type="hidden" name="existing_instruction_images[]" value="<?php echo htmlspecialchars($step_images[$step_number]); ?>">
-                                            <label>
-                                                <input type="checkbox" name="remove_instruction_images[]" value="<?php echo $step_number; ?>">
-                                                Remove this image
-                                            </label>
-                                        </div>
-                                    <?php endif; ?>
-                                    <input type="file" name="instruction_images[]" accept="image/jpeg, image/png, image/webp" class="instruction-image">
-                                    <small>Optional: <?php echo isset($step_images[$step_number]) ? 'Replace' : 'Add'; ?> image for this step</small>
-                                    <?php if ($index > 0): ?>
-                                        <button type="button" class="btn btn-secondary btn-sm" onclick="this.parentElement.remove()">Remove Step</button>
-                                    <?php endif; ?>
-                                </div>
-                            <?php } ?>
+                            ?>
                         </div>
                         <button type="button" class="btn btn-secondary" onclick="addInstructionStep()">Add Another Step</button>
                     </div>
                 </div>
+
+                <script>
+                // Store step images data in JavaScript
+                const stepImages = <?php echo json_encode($step_images); ?>;
+
+                function initializeInstructions() {
+                    const instructionsText = `<?php echo str_replace('`', '\`', $instructions_text); ?>`;
+                    const container = document.querySelector('.instruction-steps');
+                    
+                    // Check if it's a single instruction with numbered steps
+                    if (!instructionsText.includes('Step 2:')) {
+                        const numberedStepPattern = /^\d+[\.\)]\s+/m;
+                        if (numberedStepPattern.test(instructionsText)) {
+                            // Split by <br> or newline and filter empty lines
+                            const steps = instructionsText.split(/\s*<br>\s*|\r\n|\n|\r/).filter(step => step.trim());
+                            
+                            // Check if all lines are numbered
+                            const allNumbered = steps.every(step => numberedStepPattern.test(step.trim()));
+                            
+                            if (allNumbered) {
+                                // Clear container
+                                container.innerHTML = '';
+                                
+                                // Create a step input for each numbered instruction
+                                steps.forEach((step, index) => {
+                                    const stepText = step.replace(/^\d+[\.\)]\s+/, '').trim();
+                                    addInstructionStep(stepText, index + 1);
+                                });
+                                return;
+                            }
+                        }
+                    }
+                    
+                    // Handle regular multi-step instructions
+                    const steps = instructionsText.split(/Step \d+:\s+/).filter(step => step.trim());
+                    if (steps.length > 0) {
+                        // Clear container
+                        container.innerHTML = '';
+                        
+                        // Create a step input for each instruction
+                        steps.forEach((step, index) => {
+                            addInstructionStep(step.trim(), index + 1);
+                        });
+                    } else {
+                        // If no steps found, add one empty step
+                        addInstructionStep();
+                    }
+                }
+
+                function addInstructionStep(stepText = '', stepNumber = null) {
+                    const container = document.querySelector('.instruction-steps');
+                    const newStep = document.createElement('div');
+                    newStep.className = 'instruction-step';
+                    
+                    let existingImageHtml = '';
+                    if (stepNumber && stepImages[stepNumber]) {
+                        existingImageHtml = `
+                            <div class="current-step-image">
+                                <img src="${stepImages[stepNumber]}" alt="Current step image">
+                                <input type="hidden" name="existing_instruction_images[]" value="${stepImages[stepNumber]}">
+                                <label>
+                                    <input type="checkbox" name="remove_instruction_images[]" value="${stepNumber}">
+                                    Remove this image
+                                </label>
+                            </div>
+                        `;
+                    }
+                    
+                    newStep.innerHTML = `
+                        <textarea name="instructions[]" rows="3" required placeholder="Enter instruction step...">${stepText}</textarea>
+                        ${existingImageHtml}
+                        <input type="file" name="instruction_images[]" accept="image/jpeg, image/png, image/webp" class="instruction-image">
+                        <small>Optional: ${stepNumber && stepImages[stepNumber] ? 'Replace' : 'Add'} image for this step</small>
+                        ${container.children.length > 0 ? '<button type="button" class="btn btn-secondary btn-sm" onclick="this.parentElement.remove()">Remove Step</button>' : ''}
+                    `;
+                    container.appendChild(newStep);
+                }
+
+                // Initialize instructions when the page loads
+                document.addEventListener('DOMContentLoaded', initializeInstructions);
+                </script>
 
                 <style>
                 .instruction-steps {
@@ -229,21 +286,6 @@ $categories = $conn->query($categories_query)->fetch_all(MYSQLI_ASSOC);
                     color: #dc3545;
                 }
                 </style>
-
-                <script>
-                function addInstructionStep() {
-                    const container = document.querySelector('.instruction-steps');
-                    const newStep = document.createElement('div');
-                    newStep.className = 'instruction-step';
-                    newStep.innerHTML = `
-                        <textarea name="instructions[]" rows="3" required placeholder="Enter instruction step..."></textarea>
-                        <input type="file" name="instruction_images[]" accept="image/jpeg, image/png, image/webp" class="instruction-image">
-                        <small>Optional: Add an image for this step</small>
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="this.parentElement.remove()">Remove Step</button>
-                    `;
-                    container.appendChild(newStep);
-                }
-                </script>
 
                 <div class="form-group">
                     <label>Ingredients</label>

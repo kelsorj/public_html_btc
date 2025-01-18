@@ -99,11 +99,42 @@ $conn->begin_transaction();
 
 try {
     // Update recipe details
-    $stmt = $conn->prepare("UPDATE recipes SET title = ?, instructions = ?, image_path = ? WHERE id = ? AND user_id = ?");
     
     // Combine instructions into a single string with step numbers, preserving line breaks
     $instructions_array = isset($_POST['instructions']) ? $_POST['instructions'] : [];
     $formatted_instructions = '';
+    
+    // If there's only one step, check if it contains numbered steps
+    if (count($instructions_array) === 1) {
+        $single_instruction = trim($instructions_array[0]);
+        // Check for numbered steps pattern (e.g., "1. Step" or "1) Step")
+        if (preg_match('/^\d+[\.\)]/', $single_instruction)) {
+            // Split by newlines and filter empty lines
+            $potential_steps = array_filter(
+                preg_split('/\s*<br>\s*|\r\n|\n|\r/', $single_instruction),
+                'trim'
+            );
+            
+            // Verify these are actually numbered steps
+            $all_numbered = true;
+            foreach ($potential_steps as $step) {
+                if (!preg_match('/^\d+[\.\)]/', trim($step))) {
+                    $all_numbered = false;
+                    break;
+                }
+            }
+            
+            if ($all_numbered) {
+                // Replace the single instruction with multiple steps
+                $instructions_array = array_map(function($step) {
+                    // Remove the number prefix (e.g., "1. " or "1) ")
+                    return preg_replace('/^\d+[\.\)]\s*/', '', trim($step));
+                }, $potential_steps);
+            }
+        }
+    }
+    
+    // Process each instruction step
     foreach ($instructions_array as $index => $step) {
         // Replace single newlines with <br> and preserve paragraph breaks
         $formatted_step = trim($step);
@@ -119,12 +150,11 @@ try {
         $formatted_instructions .= $formatted_step . "\n\n";
     }
     
+    // Prepare the appropriate SQL statement based on whether there's a new image
     if ($image_path) {
-        // If new image uploaded, update everything including image_path
         $stmt = $conn->prepare("UPDATE recipes SET title = ?, instructions = ?, image_path = ? WHERE id = ? AND user_id = ?");
         $stmt->bind_param("sssis", $_POST['title'], $formatted_instructions, $image_path, $recipe_id, $_SESSION['user_id']);
     } else {
-        // If no new image, keep existing image_path
         $stmt = $conn->prepare("UPDATE recipes SET title = ?, instructions = ? WHERE id = ? AND user_id = ?");
         $stmt->bind_param("ssii", $_POST['title'], $formatted_instructions, $recipe_id, $_SESSION['user_id']);
     }
