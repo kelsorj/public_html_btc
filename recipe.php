@@ -31,11 +31,8 @@ if (!$recipe) {
     exit;
 }
 
-// Verify recipe belongs to user
-if ($recipe['user_id'] != $_SESSION['user_id']) {
-    header('Location: index.php');
-    exit;
-}
+// Only show edit/delete buttons if recipe belongs to current user
+$can_edit = isset($_SESSION['user_id']) && $recipe['user_id'] == $_SESSION['user_id'];
 
 // Fetch ingredients
 $ingredients_query = "SELECT * FROM ingredients WHERE recipe_id = ? ORDER BY section, id";
@@ -85,7 +82,7 @@ foreach ($ingredients as $ingredient) {
         <div class="recipe-details">
             <div class="recipe-header">
                 <a href="index.php#recipe-<?php echo $recipe['id']; ?>" class="back-link">← Back to Recipes</a>
-                <?php if ($recipe['user_id'] == $_SESSION['user_id']): ?>
+                <?php if ($can_edit): ?>
                     <div class="recipe-actions">
                         <a href="edit_recipe.php?id=<?php echo $recipe['id']; ?>" class="btn btn-primary">Edit Recipe</a>
                         <button onclick="deleteRecipe(<?php echo $recipe['id']; ?>)" class="btn btn-secondary">Delete Recipe</button>

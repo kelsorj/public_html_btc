@@ -28,7 +28,6 @@ $query = "SELECT DISTINCT r.*, GROUP_CONCAT(TRIM(c.name) SEPARATOR ', ') as cate
           FROM recipes r 
           LEFT JOIN recipe_categories rc ON r.id = rc.recipe_id 
           LEFT JOIN categories c ON rc.category_id = c.id 
-          WHERE r.user_id = " . $_SESSION['user_id'] . " 
           GROUP BY r.id 
           ORDER BY r.title ASC";
 
