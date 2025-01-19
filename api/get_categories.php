@@ -10,16 +10,14 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-// Fetch unique categories used in the user's recipes
+// Fetch all unique categories
 $query = "SELECT DISTINCT c.* 
           FROM categories c 
           JOIN recipe_categories rc ON c.id = rc.category_id 
           JOIN recipes r ON rc.recipe_id = r.id 
-          WHERE r.user_id = ?
           ORDER BY c.name";
 
 $stmt = $conn->prepare($query);
-$stmt->bind_param('i', $_SESSION['user_id']);
 $stmt->execute();
 $result = $stmt->get_result();
 
