@@ -31,8 +31,9 @@ if (!$recipe) {
     exit;
 }
 
-// Only show edit/delete buttons if recipe belongs to current user
-$can_edit = isset($_SESSION['user_id']) && $recipe['user_id'] == $_SESSION['user_id'];
+// Only show edit/delete buttons based on permissions
+$can_edit = canEditRecipe($recipe['user_id']);
+$can_delete = canDeleteRecipe($recipe['user_id']);
 
 // Fetch ingredients
 $ingredients_query = "SELECT * FROM ingredients WHERE recipe_id = ? ORDER BY section, id";
@@ -82,12 +83,14 @@ foreach ($ingredients as $ingredient) {
         <div class="recipe-details">
             <div class="recipe-header">
                 <a href="index.php#recipe-<?php echo $recipe['id']; ?>" class="back-link">← Back to Recipes</a>
-                <?php if ($can_edit): ?>
-                    <div class="recipe-actions">
+                <div class="recipe-actions">
+                    <?php if ($can_edit): ?>
                         <a href="edit_recipe.php?id=<?php echo $recipe['id']; ?>" class="btn btn-primary">Edit Recipe</a>
+                    <?php endif; ?>
+                    <?php if ($can_delete): ?>
                         <button onclick="deleteRecipe(<?php echo $recipe['id']; ?>)" class="btn btn-secondary">Delete Recipe</button>
-                    </div>
-                <?php endif; ?>
+                    <?php endif; ?>
+                </div>
             </div>
 
             <h1><?php echo htmlspecialchars($recipe['title']); ?></h1>

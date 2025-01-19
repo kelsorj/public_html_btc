@@ -13,17 +13,22 @@ if (!isset($_SESSION['user_id'])) {
 $recipe_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 // Fetch recipe details
-$query = "SELECT r.* FROM recipes r 
-          WHERE r.id = ? AND r.user_id = ?";
-
+$query = "SELECT * FROM recipes WHERE id = ?";
 $stmt = $conn->prepare($query);
-$stmt->bind_param("ii", $recipe_id, $_SESSION['user_id']);
+$stmt->bind_param("i", $recipe_id);
 $stmt->execute();
 $recipe = $stmt->get_result()->fetch_assoc();
 
-// If recipe doesn't exist or doesn't belong to user, redirect
+// If recipe doesn't exist, redirect
 if (!$recipe) {
     header('Location: index.php');
+    exit;
+}
+
+// Check if user has permission to edit this recipe
+if (!canEditRecipe($recipe['user_id'])) {
+    $_SESSION['error_message'] = 'You do not have permission to edit this recipe.';
+    header('Location: recipe.php?id=' . $recipe_id);
     exit;
 }
 

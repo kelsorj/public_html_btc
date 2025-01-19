@@ -60,4 +60,45 @@ function optimizeImage($sourcePath, $targetPath, $maxWidth = 1200, $quality = 80
     
     return $result;
 }
+
+function getUserRole($user_id) {
+    global $conn;
+    $stmt = $conn->prepare("SELECT role FROM users WHERE id = ?");
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $user = $result->fetch_assoc();
+    return $user ? $user['role'] : 'viewer';
+}
+
+function canEditRecipe($recipe_user_id) {
+    if (!isset($_SESSION['user_id'])) return false;
+    
+    $role = getUserRole($_SESSION['user_id']);
+    
+    // Admin can edit all recipes
+    if ($role === 'admin') return true;
+    
+    // Editor can edit all recipes
+    if ($role === 'editor') return true;
+    
+    // Recipe owner can edit their own recipes
+    if ($role === 'viewer' && $_SESSION['user_id'] === $recipe_user_id) return true;
+    
+    return false;
+}
+
+function canDeleteRecipe($recipe_user_id) {
+    if (!isset($_SESSION['user_id'])) return false;
+    
+    $role = getUserRole($_SESSION['user_id']);
+    
+    // Only admin can delete any recipe
+    if ($role === 'admin') return true;
+    
+    // Recipe owner can delete their own recipes
+    if ($_SESSION['user_id'] === $recipe_user_id) return true;
+    
+    return false;
+}
 ?> 

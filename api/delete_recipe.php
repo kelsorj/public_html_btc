@@ -18,28 +18,26 @@ if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
     exit;
 }
 
-// Get recipe ID from URL
+// Get recipe ID
 $recipe_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-if (!$recipe_id) {
-    header('Content-Type: application/json');
-    http_response_code(400);
-    echo json_encode(['error' => 'Recipe ID is required']);
+// Fetch recipe to check ownership
+$query = "SELECT * FROM recipes WHERE id = ?";
+$stmt = $conn->prepare($query);
+$stmt->bind_param("i", $recipe_id);
+$stmt->execute();
+$recipe = $stmt->get_result()->fetch_assoc();
+
+if (!$recipe) {
+    http_response_code(404);
+    echo json_encode(['error' => 'Recipe not found']);
     exit;
 }
 
-// Verify recipe belongs to user
-$check_query = "SELECT id, image_path FROM recipes WHERE id = ? AND user_id = ?";
-$stmt = $conn->prepare($check_query);
-$stmt->bind_param("ii", $recipe_id, $_SESSION['user_id']);
-$stmt->execute();
-$result = $stmt->get_result();
-$recipe = $result->fetch_assoc();
-
-if (!$recipe) {
-    header('Content-Type: application/json');
+// Check if user has permission to delete this recipe
+if (!canDeleteRecipe($recipe['user_id'])) {
     http_response_code(403);
-    echo json_encode(['error' => 'Forbidden']);
+    echo json_encode(['error' => 'You do not have permission to delete this recipe']);
     exit;
 }
 
