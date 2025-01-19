@@ -30,14 +30,23 @@ if (!isset($_POST['recipe_id']) || !isset($_POST['title'])) {
 
 $recipe_id = (int)$_POST['recipe_id'];
 
-// Verify recipe belongs to user
-$check_query = "SELECT id FROM recipes WHERE id = ? AND user_id = ?";
+// Get recipe details
+$check_query = "SELECT * FROM recipes WHERE id = ?";
 $stmt = $conn->prepare($check_query);
-$stmt->bind_param("ii", $recipe_id, $_SESSION['user_id']);
+$stmt->bind_param("i", $recipe_id);
 $stmt->execute();
-if (!$stmt->get_result()->fetch_assoc()) {
+$recipe = $stmt->get_result()->fetch_assoc();
+
+if (!$recipe) {
+    http_response_code(404);
+    echo json_encode(['error' => 'Recipe not found']);
+    exit;
+}
+
+// Check if user has permission to edit this recipe
+if (!canEditRecipe($recipe['user_id'])) {
     http_response_code(403);
-    echo json_encode(['error' => 'Forbidden']);
+    echo json_encode(['error' => 'You do not have permission to edit this recipe']);
     exit;
 }
 
@@ -152,11 +161,11 @@ try {
     
     // Prepare the appropriate SQL statement based on whether there's a new image
     if ($image_path) {
-        $stmt = $conn->prepare("UPDATE recipes SET title = ?, instructions = ?, image_path = ? WHERE id = ? AND user_id = ?");
-        $stmt->bind_param("sssis", $_POST['title'], $formatted_instructions, $image_path, $recipe_id, $_SESSION['user_id']);
+        $stmt = $conn->prepare("UPDATE recipes SET title = ?, instructions = ?, image_path = ? WHERE id = ?");
+        $stmt->bind_param("sssi", $_POST['title'], $formatted_instructions, $image_path, $recipe_id);
     } else {
-        $stmt = $conn->prepare("UPDATE recipes SET title = ?, instructions = ? WHERE id = ? AND user_id = ?");
-        $stmt->bind_param("ssii", $_POST['title'], $formatted_instructions, $recipe_id, $_SESSION['user_id']);
+        $stmt = $conn->prepare("UPDATE recipes SET title = ?, instructions = ? WHERE id = ?");
+        $stmt->bind_param("ssi", $_POST['title'], $formatted_instructions, $recipe_id);
     }
     $stmt->execute();
 
