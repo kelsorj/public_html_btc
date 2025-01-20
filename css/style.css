@@ -957,18 +957,27 @@ textarea {
 
     /* Recipe action buttons */
     .recipe-actions .btn {
-        padding: 6px 10px;
-        font-size: 0.85rem;
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        min-width: auto;
     }
 
-    .recipe-actions .btn-primary::before {
-        content: '✎';
-        margin-right: 4px;
-    }
-
+    /* Remove icon styles */
+    .recipe-actions .btn-primary::before,
     .recipe-actions .btn-secondary::before {
-        content: '🗑';
-        margin-right: 4px;
+        display: none;
+    }
+
+    /* Compact action buttons */
+    .recipe-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .recipe-actions .btn {
+        white-space: nowrap;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
     /* Search input modifications */
@@ -982,26 +991,5 @@ textarea {
 
     .search-input input::placeholder {
         color: #666;
-    }
-
-    /* Compact action buttons */
-    .recipe-actions {
-        display: flex;
-        gap: 8px;
-    }
-
-    .recipe-actions .btn {
-        min-width: auto;
-        white-space: nowrap;
-    }
-
-    .recipe-actions .btn-primary {
-        padding-left: 8px;
-        padding-right: 8px;
-    }
-
-    .recipe-actions .btn-secondary {
-        padding-left: 8px;
-        padding-right: 8px;
     }
 }
