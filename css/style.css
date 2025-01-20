@@ -962,22 +962,22 @@ textarea {
         min-width: auto;
     }
 
-    /* Remove icon styles */
-    .recipe-actions .btn-primary::before,
-    .recipe-actions .btn-secondary::before {
-        display: none;
+    /* Hide full text and show mobile text on small screens */
+    .recipe-actions .btn {
+        font-size: 0.85rem;
+        padding: 8px 16px;
     }
 
-    /* Compact action buttons */
-    .recipe-actions {
-        display: flex;
-        gap: 8px;
+    .recipe-actions .btn::before {
+        content: attr(data-mobile-text);
     }
 
     .recipe-actions .btn {
-        white-space: nowrap;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        font-size: 0;
+    }
+
+    .recipe-actions .btn::before {
+        font-size: 0.85rem;
     }
 
     /* Search input modifications */

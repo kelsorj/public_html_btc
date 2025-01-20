@@ -85,10 +85,10 @@ foreach ($ingredients as $ingredient) {
                 <a href="index.php#recipe-<?php echo $recipe['id']; ?>" class="back-link">← Back to Recipes</a>
                 <div class="recipe-actions">
                     <?php if ($can_edit): ?>
-                        <a href="edit_recipe.php?id=<?php echo $recipe['id']; ?>" class="btn btn-primary">Edit Recipe</a>
+                        <a href="edit_recipe.php?id=<?php echo $recipe['id']; ?>" class="btn btn-primary" data-mobile-text="Edit">Edit Recipe</a>
                     <?php endif; ?>
                     <?php if ($can_delete): ?>
-                        <button onclick="deleteRecipe(<?php echo $recipe['id']; ?>)" class="btn btn-secondary">Delete Recipe</button>
+                        <button onclick="deleteRecipe(<?php echo $recipe['id']; ?>)" class="btn btn-secondary" data-mobile-text="Delete">Delete Recipe</button>
                     <?php endif; ?>
                 </div>
             </div>
