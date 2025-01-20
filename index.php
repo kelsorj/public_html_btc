@@ -60,8 +60,7 @@ if (!$recipes) {
             </div>
             <div class="search-bar">
                 <div class="search-input">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="search" placeholder="Search recipes...">
+                    <input type="text" id="recipe-search" placeholder="Search recipes...">
                 </div>
                 <div class="category-filter">
                     <select id="category-filter">
@@ -140,7 +139,7 @@ if (!$recipes) {
                 .catch(error => console.error('Error fetching categories:', error));
 
             // Filter functionality
-            const searchInput = document.getElementById('search');
+            const searchInput = document.getElementById('recipe-search');
             const categoryFilter = document.getElementById('category-filter');
             const recipeCards = document.querySelectorAll('.recipe-card');
 
